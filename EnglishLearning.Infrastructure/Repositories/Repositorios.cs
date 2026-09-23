@@ -90,4 +90,52 @@ public class UsuarioRepositorio : IUsuarioRepositorio
             .Take(cantidad)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<RespuestaUsuario>> ObtenerRespuestasPorUsuarioAsync(int usuarioId)
+    {
+        return await _context.RespuestasUsuarios
+            .AsNoTracking()
+            .Where(r => r.UsuarioId == usuarioId)
+            .ToListAsync();
+    }
+}
+
+public class AssessmentRepositorio : IAssessmentRepositorio
+{
+    private readonly EnglishLearningDbContext _context;
+
+    public AssessmentRepositorio(EnglishLearningDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<PreguntaDiagnostica>> ObtenerPreguntasAsync()
+    {
+        return await _context.PreguntasDiagnosticas
+            .AsNoTracking()
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+    }
+
+    public async Task<PreguntaDiagnostica?> ObtenerPreguntaPorIdAsync(int id)
+    {
+        return await _context.PreguntasDiagnosticas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task GuardarEvaluacionAsync(EvaluacionDiagnostica evaluacion)
+    {
+        _context.EvaluacionesDiagnosticas.Add(evaluacion);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<EvaluacionDiagnostica?> ObtenerUltimaEvaluacionAsync(int usuarioId)
+    {
+        return await _context.EvaluacionesDiagnosticas
+            .AsNoTracking()
+            .Where(e => e.UsuarioId == usuarioId)
+            .OrderByDescending(e => e.Fecha)
+            .FirstOrDefaultAsync();
+    }
 }

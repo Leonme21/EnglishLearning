@@ -39,3 +39,27 @@ public class EjercicioConfiguration : IEntityTypeConfiguration<Ejercicio>
         builder.Property(e => e.Tipo).HasConversion<string>();
     }
 }
+
+public class PreguntaDiagnosticaConfiguration : IEntityTypeConfiguration<PreguntaDiagnostica>
+{
+    public void Configure(EntityTypeBuilder<PreguntaDiagnostica> builder)
+    {
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Contenido).IsRequired();
+        builder.Property(p => p.RespuestaCorrecta).IsRequired();
+        builder.Property(p => p.Habilidad).HasConversion<string>();
+        builder.Property(p => p.Nivel).HasConversion<string>();
+        builder.Property(p => p.OpcionesJson).IsRequired();
+    }
+}
+
+public class EvaluacionDiagnosticaConfiguration : IEntityTypeConfiguration<EvaluacionDiagnostica>
+{
+    public void Configure(EntityTypeBuilder<EvaluacionDiagnostica> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Fecha).IsRequired();
+        builder.Property(e => e.NivelAsignado).HasConversion<string>();
+        builder.Property(e => e.PuntajesPorHabilidadJson).IsRequired();
+    }
+}

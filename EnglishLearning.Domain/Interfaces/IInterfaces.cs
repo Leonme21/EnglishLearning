@@ -17,4 +17,13 @@ public interface IUsuarioRepositorio
     Task ActualizarNivelAsync(int usuarioId, NivelIngles nuevoNivel);
     Task GuardarRespuestaAsync(RespuestaUsuario respuesta);
     Task<IEnumerable<RespuestaUsuario>> ObtenerRespuestasRecientesAsync(int usuarioId, int cantidad);
+    Task<IEnumerable<RespuestaUsuario>> ObtenerRespuestasPorUsuarioAsync(int usuarioId);
+}
+
+public interface IAssessmentRepositorio
+{
+    Task<IEnumerable<PreguntaDiagnostica>> ObtenerPreguntasAsync();
+    Task<PreguntaDiagnostica?> ObtenerPreguntaPorIdAsync(int id);
+    Task GuardarEvaluacionAsync(EvaluacionDiagnostica evaluacion);
+    Task<EvaluacionDiagnostica?> ObtenerUltimaEvaluacionAsync(int usuarioId);
 }

@@ -48,4 +48,10 @@ public class FakeUsuarioRepositorio : IUsuarioRepositorio
             .Take(cantidad);
         return Task.FromResult<IEnumerable<RespuestaUsuario>>(recientes.ToList());
     }
+
+    public Task<IEnumerable<RespuestaUsuario>> ObtenerRespuestasPorUsuarioAsync(int usuarioId)
+    {
+        var todas = _respuestas.Where(r => r.UsuarioId == usuarioId).ToList();
+        return Task.FromResult<IEnumerable<RespuestaUsuario>>(todas);
+    }
 }

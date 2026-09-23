@@ -12,6 +12,8 @@ public class EnglishLearningDbContext : DbContext
     public DbSet<Ejercicio> Ejercicios { get; set; }
     public DbSet<RespuestaUsuario> RespuestasUsuarios { get; set; }
     public DbSet<ProgresoNivel> ProgresosNiveles { get; set; }
+    public DbSet<PreguntaDiagnostica> PreguntasDiagnosticas { get; set; }
+    public DbSet<EvaluacionDiagnostica> EvaluacionesDiagnosticas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

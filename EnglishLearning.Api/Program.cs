@@ -19,9 +19,11 @@ builder.Services.AddDbContext<EnglishLearningDbContext>(options =>
 // Repositorios (Scoped)
 builder.Services.AddScoped<ILeccionRepositorio, LeccionRepositorio>();
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
+builder.Services.AddScoped<IAssessmentRepositorio, AssessmentRepositorio>();
 
 // Servicios de Aplicación (Scoped)
 builder.Services.AddScoped<ILeccionServicio, LeccionServicio>();
+builder.Services.AddScoped<IAssessmentService, AssessmentService>();
 
 // CORS para Angular
 builder.Services.AddCors(options =>
@@ -40,6 +42,16 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Seed Assessment preguntas si DB disponible (no bloquea si no hay conexión)
+try
+{
+    using var scope = app.Services.CreateScope();
+    var ctx = scope.ServiceProvider.GetRequiredService<EnglishLearning.Infrastructure.Persistence.EnglishLearningDbContext>();
+    // EnsureCreated para SQLite/dev sin migraciones; en SqlServer usar Migrate() si existe
+    if (ctx.Database.CanConnect()) await EnglishLearning.Infrastructure.Seed.AssessmentSeed.SeedAsync(ctx);
+}
+catch { /* seed opcional: no falla startup si DB no configurada */ }
 
 // CorrelationId + security headers (observability + security-and-hardening:53)
 app.Use(async (ctx, next) =>
