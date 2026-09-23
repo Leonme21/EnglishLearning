@@ -1,0 +1,23 @@
+# Build
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+.vs/
+# Env
+.env
+.env.*
+*.pfx
+appsettings.Development.json
+# Node/Angular (future)
+node_modules/
+dist/
+.angular/
+# IDE
+.idea/
+.vscode/settings.json
+# Secrets
+*.key
+*.pem
