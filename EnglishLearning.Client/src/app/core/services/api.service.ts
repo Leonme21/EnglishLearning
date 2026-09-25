@@ -5,12 +5,12 @@ import { Leccion, RespuestaUsuario, ResultadoEvaluacion, PreguntaDiagnostica, Su
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = 'https://localhost:5001/api';
+  private base = 'http://localhost:5133/api';
   // Signals: estado reactivo sin Rx boilerplate
   nivelActual = signal<string | null>(localStorage.getItem('nivelActual'));
   loading = signal(false);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getPreguntas(): Observable<PreguntaDiagnostica[]> {
     return this.http.get<PreguntaDiagnostica[]>(`${this.base}/assessment/preguntas`);

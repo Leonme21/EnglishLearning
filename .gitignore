@@ -1,23 +1,40 @@
-# Build
-bin/
-obj/
-out/
-publish/
+# =========================
+# .NET / C#
+# =========================
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+Publish/
 *.user
 *.suo
 .vs/
-# Env
-.env
-.env.*
-*.pfx
-appsettings.Development.json
-# Node/Angular (future)
+*.userosscache
+*.sln.docstates
+
+# =========================
+# Angular / Node.js
+# =========================
 node_modules/
 dist/
 .angular/
-# IDE
-.idea/
-.vscode/settings.json
-# Secrets
+coverage/
+npm-debug.log
+yarn-error.log
+
+# =========================
+# Entornos y Secretos
+# =========================
+.env
+.env.*
+*.pfx
 *.key
 *.pem
+appsettings.Development.json
+appsettings.*.json
+
+# =========================
+# IDEs / Editores
+# =========================
+.idea/
+.vscode/
+*.swp

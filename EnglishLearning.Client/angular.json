@@ -8,8 +8,26 @@
       "sourceRoot": "src",
       "prefix": "app",
       "architect": {
-        "build": { "builder": "@angular-devkit/build-angular:application", "options": { "outputPath": "dist", "index": "src/index.html", "browser": "src/main.ts" } }
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "tsconfig.app.json"
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "english-learning-client:build"
+          }
+        }
       }
     }
+  },
+  "cli": {
+    "analytics": "15eb61ee-faee-462d-ba8b-9a80627d2b70"
   }
 }

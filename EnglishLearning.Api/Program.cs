@@ -2,6 +2,7 @@ using EnglishLearning.Application.Services;
 using EnglishLearning.Domain.Interfaces;
 using EnglishLearning.Infrastructure.Persistence;
 using EnglishLearning.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,7 +67,7 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseCors("AngularPolicy");
 app.UseAuthorization();
 app.MapControllers();
