@@ -1,0 +1,49 @@
+@inject NavigationManager Navigation
+@inject UserSession Session
+@inject ApiClient Api
+
+@if (_isLoading)
+{
+    <div class="splash-screen">
+        <div class="spinner"></div>
+        <p>Verificando estado...</p>
+    </div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.NivelActual == "SinAsignar")
+        {
+            var result = await Api.GetAsync<UserProfileResponse>("api/v1/auth/me");
+            if (result.IsSuccess && result.Data != null)
+            {
+                Session.SetUser(result.Data.Id, result.Data.NivelActual);
+                if (result.Data.NivelActual == "SinAsignar")
+                {
+                    Navigation.NavigateTo("/placement");
+                }
+                else
+                {
+                    _isLoading = false;
+                }
+            }
+            else
+            {
+                Navigation.NavigateTo("/placement");
+            }
+        }
+        else
+        {
+            _isLoading = false;
+        }
+    }
+}

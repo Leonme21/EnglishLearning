@@ -1,0 +1,93 @@
+@page "/"
+@layout PublicLayout
+@inject NavigationManager Navigation
+
+<PageTitle>English Learning - Comienza tu aventura</PageTitle>
+
+<div class="landing-container">
+    <div class="hero-section text-center">
+        <h1 class="hero-title">Domina el inglés a tu propio ritmo</h1>
+        <p class="hero-subtitle">Plataforma adaptativa que evalúa tu nivel actual y genera lecciones diseñadas para llevarte a la fluidez (A1 a C1).</p>
+        
+        <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" @onclick='() => Navigation.NavigateTo("/register")'>Comenzar ahora</button>
+            <button class="btn btn-secondary btn-lg" @onclick='() => Navigation.NavigateTo("/login")'>Ya tengo cuenta</button>
+        </div>
+    </div>
+
+    <div class="features-grid">
+        <div class="glass-panel feature-card">
+            <h3>🎯 Nivel CEFR</h3>
+            <p>Placement test riguroso para ubicarte desde A1 hasta C1 con precisión.</p>
+        </div>
+        <div class="glass-panel feature-card">
+            <h3>📖 4 Habilidades</h3>
+            <p>Desarrolla Reading, Listening, Writing y Speaking con feedback interactivo.</p>
+        </div>
+        <div class="glass-panel feature-card">
+            <h3>📈 Progreso Real</h3>
+            <p>Sube de nivel automáticamente basado en tu rendimiento en los últimos ejercicios.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.landing-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+.hero-section {
+    text-align: center;
+    padding: 4rem 1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.hero-title {
+    font-size: 3.5rem;
+    background: linear-gradient(135deg, hsl(var(--primary-h), var(--primary-s), 70%), hsl(var(--accent-h), var(--accent-s), 50%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5rem;
+}
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+}
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+.btn-secondary {
+    background: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--surface-border);
+}
+.btn-secondary:hover {
+    background: var(--surface-color);
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem 1rem;
+}
+.feature-card {
+    padding: 2rem;
+    text-align: center;
+    transition: transform var(--transition-bounce);
+}
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+.feature-card h3 {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+</style>

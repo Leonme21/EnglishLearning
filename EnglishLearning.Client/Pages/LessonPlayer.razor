@@ -1,0 +1,308 @@
+@page "/lessons/{Id:int}"
+@attribute [Authorize]
+@inject LessonService LessonService
+@inject UserSession Session
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Reproductor de Lección - English Learning</PageTitle>
+
+<RequirePlacement>
+    <div class="player-container">
+        @if (_isLoading)
+        {
+            <div class="text-center py-5"><span class="spinner-small" style="width:3rem;height:3rem;border-width:4px;"></span></div>
+        }
+        else if (_lesson == null)
+        {
+            <div class="glass-panel text-center p-5">
+                <h3>Lección no encontrada</h3>
+                <button class="btn btn-primary mt-4" @onclick='() => Navigation.NavigateTo("/lessons")'>Volver</button>
+            </div>
+        }
+        else if (_isCompleted)
+        {
+            <div class="glass-panel result-card text-center slide-up">
+                <div class="celebration-icon mb-4">🏆</div>
+                <h2>¡Lección Completada!</h2>
+                <p class="text-muted mt-2">Has respondido correctamente @_correctAnswers de @(_lesson.Ejercicios.Count) ejercicios.</p>
+                
+                @if (_levelUpMessage != null)
+                {
+                    <div class="level-up-box mt-4 fade-in">
+                        <h3>¡Subiste de Nivel! 🎉</h3>
+                        <p>@_levelUpMessage</p>
+                    </div>
+                }
+
+                <button class="btn btn-primary mt-4" @onclick='() => Navigation.NavigateTo("/lessons")'>Continuar</button>
+            </div>
+        }
+        else
+        {
+            var ex = _lesson.Ejercicios[_currentIndex];
+            <div class="glass-panel exercise-card fade-in" @key="ex.Id">
+                <div class="progress-header mb-4">
+                    <span class="text-muted">Ejercicio @(_currentIndex + 1) de @_lesson.Ejercicios.Count</span>
+                    <button class="btn-close-lesson" @onclick='() => Navigation.NavigateTo("/lessons")'>×</button>
+                    <div class="progress-track mt-2">
+                        <div class="progress-fill" style="width: @( ((_currentIndex) * 100) / _lesson.Ejercicios.Count )%"></div>
+                    </div>
+                </div>
+
+                <div class="exercise-body">
+                    <div class="exercise-type-badge mb-3">@ex.Tipo</div>
+                    
+                    @if (ex.Tipo == "Escucha")
+                    {
+                        <div class="audio-player mb-4 text-center">
+                            <button class="btn-audio" @onclick="() => PlayAudio(ex.Contenido)">
+                                <span class="icon">🔊</span> Reproducir Audio
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <h3 class="mb-4">@GetQuestionText(ex.Contenido)</h3>
+                    }
+
+                    <div class="exercise-input">
+                        @if (ex.Tipo == "OpcionMultiple" || (ex.Tipo == "Escucha" && GetOptions(ex.Contenido).Any()))
+                        {
+                            var options = GetOptions(ex.Contenido);
+                            <div class="options-list">
+                                @foreach (var opt in options)
+                                {
+                                    <button class="btn-option @(_currentAnswer == opt ? "selected" : "")" 
+                                            @onclick="() => _currentAnswer = opt" 
+                                            disabled="@_isChecking">
+                                        @opt
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else if (ex.Tipo == "Escritura")
+                        {
+                            <textarea class="form-control" rows="4" @bind="_currentAnswer" @bind:event="oninput" 
+                                      placeholder="Escribe tu respuesta aquí..." disabled="@_isChecking" maxlength="2000"></textarea>
+                        }
+                        else
+                        {
+                            <!-- Lectura o fallback -->
+                            <input type="text" class="form-control" @bind="_currentAnswer" @bind:event="oninput" 
+                                   placeholder="Tu respuesta..." disabled="@_isChecking" maxlength="2000" />
+                        }
+                    </div>
+
+                    @if (_feedbackMessage != null)
+                    {
+                        <div class="feedback-box @(_isCorrect ? "feedback-success" : "feedback-error") mt-4 fade-in">
+                            <span class="icon">@(_isCorrect ? "✅" : "❌")</span>
+                            <span>@_feedbackMessage</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="exercise-footer mt-4">
+                    @if (_feedbackMessage == null)
+                    {
+                        <button class="btn btn-primary w-100" 
+                                disabled="@(string.IsNullOrWhiteSpace(_currentAnswer) || _isChecking)" 
+                                @onclick="CheckAnswer">
+                            @if (_isChecking) { <span class="spinner-small"></span> } else { <span>Comprobar</span> }
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary w-100" @onclick="NextExercise">Continuar</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</RequirePlacement>
+
+<style>
+.player-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    width: 100%;
+}
+.exercise-card, .result-card {
+    padding: 2.5rem;
+}
+.btn-close-lesson {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    float: right;
+    margin-top: -1.5rem;
+}
+.exercise-type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: var(--surface-color);
+    color: var(--accent-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--surface-border);
+}
+.btn-audio {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+    transition: transform var(--transition-bounce);
+}
+.btn-audio:hover { transform: scale(1.05); }
+
+.feedback-box {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+.feedback-success {
+    background: hsla(var(--success-h), var(--success-s), var(--success-l), 0.1);
+    color: hsl(var(--success-h), var(--success-s), var(--success-l));
+    border: 1px solid hsla(var(--success-h), var(--success-s), var(--success-l), 0.2);
+}
+.feedback-error {
+    background: hsla(var(--error-h), var(--error-s), var(--error-l), 0.1);
+    color: hsl(var(--error-h), var(--error-s), var(--error-l));
+    border: 1px solid hsla(var(--error-h), var(--error-s), var(--error-l), 0.2);
+}
+.celebration-icon { font-size: 4rem; }
+.level-up-box {
+    background: linear-gradient(135deg, hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2), hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2));
+    border: 2px solid var(--accent-color);
+    padding: 1.5rem;
+    border-radius: 1rem;
+}
+.level-up-box h3 { color: var(--accent-color); margin-bottom: 0.5rem; }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private bool _isLoading = true;
+    private LessonDto? _lesson;
+    private int _currentIndex = 0;
+    private string _currentAnswer = "";
+    private bool _isChecking = false;
+    private string? _feedbackMessage;
+    private bool _isCorrect;
+    private bool _isCompleted = false;
+    private int _correctAnswers = 0;
+    private string? _levelUpMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await LessonService.GetLessonByIdAsync(Id);
+        if (res.IsSuccess && res.Data != null)
+        {
+            _lesson = res.Data;
+        }
+        else
+        {
+            ToastService.ShowError("Error al cargar la lección.");
+        }
+        _isLoading = false;
+    }
+
+    private string GetQuestionText(string contenido)
+    {
+        var startBracket = contenido.IndexOf('[');
+        if (startBracket > 0)
+        {
+            return contenido.Substring(0, startBracket).Trim();
+        }
+        return contenido;
+    }
+
+    private List<string> GetOptions(string contenido)
+    {
+        var startBracket = contenido.IndexOf('[');
+        var endBracket = contenido.IndexOf(']');
+        if (startBracket > 0 && endBracket > startBracket)
+        {
+            var optionsStr = contenido.Substring(startBracket + 1, endBracket - startBracket - 1);
+            return optionsStr.Split('|').Select(o => o.Trim()).ToList();
+        }
+        return new List<string>();
+    }
+
+    private async Task PlayAudio(string text)
+    {
+        var sentence = GetQuestionText(text);
+        var script = $"var u = new SpeechSynthesisUtterance('{sentence.Replace("'", "\\'")}'); u.lang='en-US'; speechSynthesis.speak(u);";
+        await JSRuntime.InvokeVoidAsync("eval", script);
+    }
+
+    private async Task CheckAnswer()
+    {
+        _isChecking = true;
+        var ex = _lesson!.Ejercicios[_currentIndex];
+        
+        var req = new EvaluateExerciseRequest(Session.UsuarioId, ex.Id, _currentAnswer);
+        var res = await LessonService.EvaluateAsync(req);
+        _isChecking = false;
+
+        if (res.IsSuccess && res.Data != null)
+        {
+            _isCorrect = res.Data.EsCorrecta;
+            _feedbackMessage = res.Data.Mensaje;
+            if (_isCorrect) _correctAnswers++;
+            
+            if (res.Data.NuevoNivel != null)
+            {
+                _levelUpMessage = $"¡Felicidades! Has alcanzado el nivel {res.Data.NuevoNivel}.";
+                Session.SetUser(Session.UsuarioId, res.Data.NuevoNivel);
+                _ = TriggerConfetti();
+            }
+        }
+        else
+        {
+            ToastService.ShowError("Error al evaluar respuesta");
+        }
+    }
+
+    private void NextExercise()
+    {
+        _feedbackMessage = null;
+        _currentAnswer = "";
+        
+        if (_currentIndex < _lesson!.Ejercicios.Count - 1)
+        {
+            _currentIndex++;
+        }
+        else
+        {
+            _isCompleted = true;
+            if (_levelUpMessage != null)
+            {
+                _ = TriggerConfetti();
+            }
+        }
+    }
+
+    private async Task TriggerConfetti()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "if(window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });");
+        }
+        catch { }
+    }
+}

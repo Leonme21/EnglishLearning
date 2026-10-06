@@ -1,0 +1,282 @@
+@page "/placement"
+@attribute [Authorize]
+@using EnglishLearning.Client.Models
+@using EnglishLearning.Client.Services
+@using EnglishLearning.Client.Services.Api
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+@inject AssessmentService AssessmentService
+@inject UserSession Session
+@inject ApiClient Api
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+
+<PageTitle>Test de Nivel - English Learning</PageTitle>
+
+<div class="placement-container">
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-small" style="width: 3rem; height: 3rem; border-width: 4px;"></div>
+            <p class="mt-4 text-muted">Cargando evaluación...</p>
+        </div>
+    }
+    else if (_result != null)
+    {
+        <div class="glass-panel result-card slide-up">
+            <div class="result-header text-center">
+                <h2>¡Evaluación Completada!</h2>
+                <div class="level-badge">@_result.NivelAsignado</div>
+                <p class="text-muted">Puntaje total: @_result.PuntajeTotal / @(_questions.Count * 10)</p>
+            </div>
+            
+            <div class="skills-grid mt-4">
+                @foreach(var skill in _result.PuntajesPorHabilidad)
+                {
+                    <div class="skill-bar">
+                        <div class="skill-info">
+                            <span>@skill.Key</span>
+                            <span>@skill.Value.ToString("0")%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: @skill.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="recommendation-box mt-4">
+                <h4>Recomendación</h4>
+                <p>@_result.SiguienteRecomendacion</p>
+                <p class="text-muted text-sm mt-2">@_result.Mensaje</p>
+            </div>
+
+            <button class="btn btn-primary w-100 mt-4" @onclick="GoToDashboard">Ir a mi Dashboard</button>
+        </div>
+    }
+    else if (_questions.Count > 0)
+    {
+        var q = _questions[_currentIndex];
+        
+        <div class="glass-panel question-card fade-in" @key="q.Id">
+            <div class="progress-header mb-4">
+                <span class="text-muted">Pregunta @(_currentIndex + 1) de @_questions.Count</span>
+                <div class="progress-track mt-2">
+                    <div class="progress-fill" style="width: @( ((_currentIndex) * 100) / _questions.Count )%"></div>
+                </div>
+            </div>
+
+            <div class="question-body">
+                <span class="badge-skill mb-2">@q.Habilidad</span>
+                <h3 class="mb-4">@q.Contenido</h3>
+
+                <div class="options-list">
+                    @foreach (var opt in q.Opciones)
+                    {
+                        var isSelected = _respuestas.TryGetValue(q.Id, out var ans) && ans == opt;
+                        <button class="btn-option @(isSelected ? "selected" : "")" @onclick="() => SelectOption(q.Id, opt)">
+                            @opt
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="question-footer mt-4">
+                <button class="btn btn-secondary" disabled="@(_currentIndex == 0)" @onclick="PrevQuestion">Anterior</button>
+                
+                @if (_currentIndex < _questions.Count - 1)
+                {
+                    <button class="btn btn-primary" disabled="@(!_respuestas.ContainsKey(q.Id))" @onclick="NextQuestion">Siguiente</button>
+                }
+                else
+                {
+                    <button class="btn btn-primary btn-submit" disabled="@(!_respuestas.ContainsKey(q.Id) || _isSubmitting)" @onclick="SubmitTest">
+                        @if (_isSubmitting) { <span class="spinner-small"></span> } else { <span>Finalizar</span> }
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="glass-panel text-center p-4">
+            <h3>No se encontraron preguntas.</h3>
+            <p class="text-muted mt-2">Hubo un problema de conexión o no hay preguntas disponibles.</p>
+        </div>
+    }
+</div>
+
+<style>
+.placement-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    width: 100%;
+}
+.result-card, .question-card {
+    padding: 2.5rem;
+}
+.level-badge {
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-color);
+    margin: 1rem 0;
+    text-shadow: 0 4px 12px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+}
+.skill-bar {
+    margin-bottom: 1rem;
+}
+.skill-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.progress-track {
+    height: 8px;
+    background: var(--surface-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    transition: width var(--transition-bounce);
+}
+.recommendation-box {
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+    border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+.text-sm { font-size: 0.85rem; }
+
+.badge-skill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: var(--surface-color);
+    color: var(--accent-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--surface-border);
+}
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.btn-option {
+    background: transparent;
+    border: 2px solid var(--surface-border);
+    color: var(--text-main);
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    text-align: left;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.btn-option:hover {
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+    border-color: var(--primary-color);
+}
+.btn-option.selected {
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+    border-color: var(--primary-color);
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+.question-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-in {
+    animation: fadeIn 0.3s ease-in forwards;
+}
+@@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private bool _isSubmitting = false;
+    private List<DiagnosticQuestion> _questions = new();
+    private int _currentIndex = 0;
+    private Dictionary<int, string> _respuestas = new();
+    private SubmitAssessmentResponse? _result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.UsuarioId == 0)
+        {
+            var me = await Api.GetAsync<UserProfileResponse>("api/v1/auth/me");
+            if (me.IsSuccess && me.Data != null)
+            {
+                Session.SetUser(me.Data.Id, me.Data.NivelActual);
+            }
+        }
+
+        var result = await AssessmentService.GetQuestionsAsync();
+        if (result.IsSuccess && result.Data != null)
+        {
+            _questions = result.Data;
+        }
+        else
+        {
+            ToastService.ShowError("Error al cargar la evaluación.");
+        }
+        _isLoading = false;
+    }
+
+    private void SelectOption(int questionId, string option)
+    {
+        _respuestas[questionId] = option;
+    }
+
+    private void PrevQuestion()
+    {
+        if (_currentIndex > 0) _currentIndex--;
+    }
+
+    private void NextQuestion()
+    {
+        if (_currentIndex < _questions.Count - 1) _currentIndex++;
+    }
+
+    private async Task SubmitTest()
+    {
+        _isSubmitting = true;
+        var answers = _respuestas.Select(kv => new SubmitAnswer(kv.Key, kv.Value)).ToList();
+        
+        var req = new SubmitAssessmentRequest(Session.UsuarioId, answers);
+        var result = await AssessmentService.SubmitAsync(req);
+        _isSubmitting = false;
+
+        if (result.IsSuccess && result.Data != null)
+        {
+            _result = result.Data;
+            Session.SetUser(Session.UsuarioId, _result.NivelAsignado);
+            ToastService.ShowSuccess("¡Evaluación completada!");
+        }
+        else
+        {
+            ToastService.ShowError(result.Error?.Message ?? "Error al enviar la evaluación.");
+        }
+    }
+
+    private void GoToDashboard()
+    {
+        Navigation.NavigateTo("/dashboard");
+    }
+}

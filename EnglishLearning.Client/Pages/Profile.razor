@@ -1,0 +1,89 @@
+@page "/profile"
+@attribute [Authorize]
+@inject UserSession Session
+@inject ApiClient Api
+@inject ToastService ToastService
+
+<PageTitle>Perfil - English Learning</PageTitle>
+
+<RequirePlacement>
+    <div class="profile-container">
+        <h1 class="mb-4">Mi Perfil</h1>
+
+        <div class="glass-panel profile-card">
+            @if (_isLoading)
+            {
+                <div class="text-center py-4"><span class="spinner-small" style="width:3rem;height:3rem;border-width:4px;"></span></div>
+            }
+            else if (_user != null)
+            {
+                <div class="profile-avatar mb-4">
+                    <div class="avatar-circle">
+                        @(_user.Nombre?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                    </div>
+                </div>
+                
+                <div class="profile-info text-center mb-4">
+                    <h2>@_user.Nombre</h2>
+                    <p class="text-muted">@_user.Correo</p>
+                    <div class="level-badge mt-2">Nivel: @_user.NivelActual</div>
+                </div>
+            }
+        </div>
+    </div>
+</RequirePlacement>
+
+<style>
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+.profile-card {
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+}
+.level-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+    color: var(--accent-color);
+    border-radius: 2rem;
+    font-weight: bold;
+}
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private UserProfileResponse? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Api.GetAsync<UserProfileResponse>("api/v1/auth/me");
+        if (res.IsSuccess && res.Data != null)
+        {
+            _user = res.Data;
+            // ensure session matches
+            Session.SetUser(_user.Id, _user.NivelActual);
+        }
+        else
+        {
+            ToastService.ShowError("Error al cargar perfil");
+        }
+        _isLoading = false;
+    }
+}

@@ -1,59 +1,115 @@
+using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Enums;
 using EnglishLearning.Domain.Services;
+using EnglishLearning.Domain.ValueObjects;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLearning.Tests.Services;
 
-public class CalculadoraNivelTests
+public class LevelCalculatorTests
 {
+    private readonly LevelCalculator _calculator;
+
+    public LevelCalculatorTests()
+    {
+        var options = Options.Create(new EnglishLearning.Domain.Options.LevelCalculationOptions
+        {
+            Thresholds = new Dictionary<string, int>
+            {
+                { "A1", 0 },
+                { "A2", 26 },
+                { "B1", 46 },
+                { "B2", 66 },
+                { "C1", 86 }
+            }
+        });
+        _calculator = new LevelCalculator(options);
+    }
+
     [Theory]
     [InlineData(0, 10, NivelIngles.A1)]
-    [InlineData(2, 10, NivelIngles.A1)] // 20%
-    [InlineData(3, 10, NivelIngles.A2)] // 30%
-    [InlineData(4, 10, NivelIngles.A2)] // 40%
-    [InlineData(5, 10, NivelIngles.B1)] // 50%
-    [InlineData(6, 10, NivelIngles.B1)] // 60%
-    [InlineData(7, 10, NivelIngles.B2)] // 70%
-    [InlineData(8, 10, NivelIngles.B2)] // 80%
-    [InlineData(9, 10, NivelIngles.C1)] // 90%
+    [InlineData(2, 10, NivelIngles.A1)]
+    [InlineData(3, 10, NivelIngles.A2)]
+    [InlineData(4, 10, NivelIngles.A2)]
+    [InlineData(5, 10, NivelIngles.B1)]
+    [InlineData(6, 10, NivelIngles.B1)]
+    [InlineData(7, 10, NivelIngles.B2)]
+    [InlineData(8, 10, NivelIngles.B2)]
+    [InlineData(9, 10, NivelIngles.C1)]
     [InlineData(10, 10, NivelIngles.C1)]
-    public void CalcularPorcentaje_umbrales_correctos(int correctas, int total, NivelIngles esperado)
+    public void CalculateFromCorrectAnswers_Thresholds_Correct(int correctas, int total, NivelIngles expected)
     {
-        var nivel = CalculadoraNivel.CalcularPorcentaje(correctas, total);
-        Assert.Equal(esperado, nivel);
+        var nivel = _calculator.CalculateFromCorrectAnswers(correctas, total);
+        Assert.Equal(expected, nivel);
     }
 
     [Theory]
     [InlineData(25, NivelIngles.A1)]
-    [InlineData(25.1, NivelIngles.A2)]
+    [InlineData(26, NivelIngles.A2)]
     [InlineData(45, NivelIngles.A2)]
-    [InlineData(45.1, NivelIngles.B1)]
+    [InlineData(46, NivelIngles.B1)]
     [InlineData(65, NivelIngles.B1)]
-    [InlineData(65.1, NivelIngles.B2)]
+    [InlineData(66, NivelIngles.B2)]
     [InlineData(85, NivelIngles.B2)]
-    [InlineData(85.1, NivelIngles.C1)]
-    public void CalcularPorPorcentaje_limites_inclusive(double pct, NivelIngles esperado)
+    [InlineData(86, NivelIngles.C1)]
+    public void CalculateFromPercentage_Boundaries_Correct(double pct, NivelIngles expected)
     {
-        Assert.Equal(esperado, CalculadoraNivel.CalcularPorPorcentaje(pct));
+        var result = _calculator.TryCalculateFromPercentage(pct);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expected, result.Value);
     }
 
     [Fact]
-    public void Calcular_conTotalCero_retornaA1()
+    public void CalculateFromPercentage_WithTotalZero_ReturnsA1()
     {
-        Assert.Equal(NivelIngles.A1, CalculadoraNivel.CalcularPorcentaje(0, 0));
+        var nivel = _calculator.CalculateFromCorrectAnswers(0, 0);
+        Assert.Equal(NivelIngles.A1, nivel);
     }
 
     [Fact]
-    public void Recomendacion_para_habilidad_debil_contiene_habilidad()
+    public void TryCalculateFromPercentage_OutOfRange_ReturnsError()
     {
-        var puntajes = new Dictionary<Habilidad, double>
+        var result = _calculator.TryCalculateFromPercentage(-1);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.Error.Type);
+    }
+}
+
+public class RecommendationEngineTests
+{
+    private readonly RecommendationEngine _engine = new();
+
+    [Fact]
+    public void GenerateRecommendation_ForWeakestSkill_ReturnsSkillSpecificAdvice()
+    {
+        var puntajes = new Dictionary<Habilidad, Percentage>
         {
-            [Habilidad.Reading] = 90,
-            [Habilidad.Listening] = 30,
-            [Habilidad.Writing] = 80,
-            [Habilidad.Speaking] = 70
+            [Habilidad.Reading] = Percentage.Create(90).Value,
+            [Habilidad.Listening] = Percentage.Create(30).Value,
+            [Habilidad.Writing] = Percentage.Create(80).Value,
+            [Habilidad.Speaking] = Percentage.Create(70).Value
         };
-        var rec = CalculadoraNivel.RecomendacionPara(NivelIngles.A1, puntajes);
+
+        var rec = _engine.GenerateRecommendation(NivelIngles.A1, puntajes);
+
         Assert.Contains("Listening", rec);
-        Assert.Contains("actually", rec.ToLower());
+        Assert.Contains("sonidos", rec.ToLower());
+    }
+
+    [Fact]
+    public void GenerateRecommendations_ReturnsMultipleRecommendations()
+    {
+        var puntajes = new Dictionary<Habilidad, Percentage>
+        {
+            [Habilidad.Reading] = Percentage.Create(90).Value,
+            [Habilidad.Listening] = Percentage.Create(30).Value,
+            [Habilidad.Writing] = Percentage.Create(80).Value,
+            [Habilidad.Speaking] = Percentage.Create(70).Value
+        };
+
+        var recs = _engine.GenerateRecommendations(NivelIngles.A1, puntajes, 2);
+
+        Assert.Equal(2, recs.Count);
+        Assert.All(recs, r => Assert.NotEmpty(r));
     }
 }

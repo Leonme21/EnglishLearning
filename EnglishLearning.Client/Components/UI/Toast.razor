@@ -1,0 +1,62 @@
+@inject ToastService ToastService
+@implements IDisposable
+
+@if (_isVisible)
+{
+    <div class="toast @GetToastClass()">
+        @_message
+        <button class="toast-close" @onclick="Close">×</button>
+    </div>
+}
+
+@code {
+    private string _message = "";
+    private ToastLevel _level = ToastLevel.Info;
+    private bool _isVisible = false;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(string message, ToastLevel level)
+    {
+        _message = message;
+        _level = level;
+        _isVisible = true;
+        StateHasChanged();
+
+        _timer?.Dispose();
+        _timer = new System.Threading.Timer(HideToast, null, 3000, System.Threading.Timeout.Infinite);
+    }
+
+    private void HideToast(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            _isVisible = false;
+            StateHasChanged();
+        });
+    }
+
+    private void Close()
+    {
+        _isVisible = false;
+        _timer?.Dispose();
+    }
+
+    private string GetToastClass() => _level switch
+    {
+        ToastLevel.Success => "toast-success",
+        ToastLevel.Error => "toast-error",
+        ToastLevel.Warning => "toast-warning",
+        _ => "toast-info"
+    };
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+        _timer?.Dispose();
+    }
+}

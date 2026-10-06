@@ -1,0 +1,115 @@
+@page "/dashboard"
+@attribute [Authorize]
+@inject ProgressService ProgressService
+@inject UserSession Session
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<PageTitle>Dashboard - English Learning</PageTitle>
+
+<RequirePlacement>
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <span class="spinner-small" style="width:3rem;height:3rem;border-width:4px;"></span>
+        </div>
+    }
+    else if (_progress != null)
+    {
+        <div class="dashboard-header mb-4">
+            <h1>Hola, ¡bienvenido de nuevo!</h1>
+            <p class="text-muted">Estás en nivel <strong class="text-accent">@_progress.NivelActual</strong></p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="glass-panel main-action-card">
+                <h2>Continúa tu aprendizaje</h2>
+                <p>Explora las lecciones de nivel @_progress.NivelActual preparadas para ti.</p>
+                <button class="btn btn-primary mt-4" @onclick='() => Navigation.NavigateTo("/lessons")'>Ver Lecciones</button>
+            </div>
+
+            <div class="glass-panel summary-card">
+                <h3>Métricas rápidas</h3>
+                @if (_progress.MetricasPorHabilidad.Count == 0)
+                {
+                    <p class="text-muted mt-2">No has completado ejercicios aún.</p>
+                }
+                else
+                {
+                    <div class="skills-list mt-2">
+                        @foreach(var skill in _progress.MetricasPorHabilidad.Take(2))
+                        {
+                            <div class="skill-mini">
+                                <span>@skill.Key</span>
+                                <strong>@skill.Value.Porcentaje.ToString("0")%</strong>
+                            </div>
+                        }
+                        <a href="/progress" class="text-accent text-sm mt-2" style="display:block">Ver todo el progreso &rarr;</a>
+                    </div>
+                }
+            </div>
+
+            <div class="glass-panel rec-card">
+                <h3>Sugerencias</h3>
+                @if (_progress.Recomendaciones.Count == 0)
+                {
+                    <p class="text-muted mt-2">¡Sigue así! No hay sugerencias por ahora.</p>
+                }
+                else
+                {
+                    <ul class="rec-list mt-2">
+                        @foreach(var rec in _progress.Recomendaciones.Take(2))
+                        {
+                            <li>@rec</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    }
+</RequirePlacement>
+
+<style>
+.dashboard-header h1 { margin-bottom: 0.5rem; }
+.text-accent { color: var(--accent-color); }
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.main-action-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1), transparent);
+    border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+}
+.skill-mini {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--surface-border);
+}
+.rec-list {
+    padding-left: 1.2rem;
+    color: var(--text-muted);
+}
+.rec-list li { margin-bottom: 0.5rem; }
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private ProgressReportResponse? _progress;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await ProgressService.GetProgressAsync(Session.UsuarioId);
+        if (res.IsSuccess)
+        {
+            _progress = res.Data;
+        }
+        else
+        {
+            ToastService.ShowError("Error al cargar dashboard.");
+        }
+        _isLoading = false;
+    }
+}

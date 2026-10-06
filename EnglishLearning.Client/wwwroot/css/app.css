@@ -1,0 +1,252 @@
+:root {
+    /* Paleta (HSL) */
+    --bg-h: 235; --bg-s: 35%; --bg-l: 8%;
+    --surface-h: 235; --surface-s: 30%; --surface-l: 13%;
+    --primary-h: 255; --primary-s: 85%; --primary-l: 66%;
+    --accent-h: 172; --accent-s: 70%; --accent-l: 50%;
+    
+    --success-h: 150; --success-s: 65%; --success-l: 48%;
+    --error-h: 350; --error-s: 85%; --error-l: 62%;
+
+    /* Colores por Nivel */
+    --level-a1: hsl(150, 70%, 60%);
+    --level-a2: hsl(172, 70%, 50%);
+    --level-b1: hsl(210, 80%, 60%);
+    --level-b2: hsl(260, 75%, 65%);
+    --level-c1: hsl(45, 90%, 55%);
+
+    /* Variables Resueltas */
+    --bg-color: hsl(var(--bg-h), var(--bg-s), var(--bg-l));
+    --surface-color: hsla(var(--surface-h), var(--surface-s), var(--surface-l), 0.7);
+    --surface-border: hsla(0, 0%, 100%, 0.1);
+    
+    --primary-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+    --primary-hover: hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) + 10%));
+    
+    --accent-color: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+    
+    --text-main: hsl(0, 0%, 95%);
+    --text-muted: hsl(235, 15%, 70%);
+
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+/* Splash Screen */
+.splash-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: radial-gradient(circle at center, hsl(var(--bg-h), var(--bg-s), 12%), var(--bg-color));
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--surface-color);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--surface-border);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Botones */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-bounce);
+    outline: none;
+    user-select: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), hsl(var(--primary-h), var(--primary-s), 50%));
+    color: white;
+    box-shadow: 0 4px 15px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.6);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Blazor Error UI */
+#blazor-error-ui {
+    background: hsl(var(--error-h), var(--error-s), var(--error-l));
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    color: white;
+    font-weight: 500;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* Utilidades de texto */
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.mb-4 { margin-bottom: 1.5rem; }
+.mt-4 { margin-top: 1.5rem; }
+.mt-2 { margin-top: 0.5rem; }
+.w-100 { width: 100%; }
+
+/* Formularios */
+.form-group {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--surface-border);
+    background: hsla(var(--bg-h), var(--bg-s), 5%, 0.5);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+}
+
+.validation-message {
+    color: hsl(var(--error-h), var(--error-s), var(--error-l));
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Spinner inline */
+.spinner-small {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid hsla(0, 0%, 100%, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+/* Auth Pages */
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-card {
+    padding: 2.5rem 2rem;
+}
+
+.auth-divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    position: relative;
+    color: var(--text-muted);
+}
+
+.auth-divider::before, .auth-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: var(--surface-border);
+}
+.auth-divider::before { left: 0; }
+.auth-divider::after { right: 0; }
+
+.strength-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-border);
+    transition: all var(--transition-fast);
+    width: 0%;
+}
+.strength-weak { width: 33%; background: hsl(var(--error-h), var(--error-s), var(--error-l)); }
+.strength-medium { width: 66%; background: var(--level-c1); }
+.strength-strong { width: 100%; background: hsl(var(--success-h), var(--success-s), var(--success-l)); }

@@ -1,0 +1,109 @@
+@page "/progress"
+@attribute [Authorize]
+@inject ProgressService ProgressService
+@inject UserSession Session
+@inject ToastService ToastService
+
+<PageTitle>Tu Progreso - English Learning</PageTitle>
+
+<RequirePlacement>
+    <div class="progress-page">
+        <h1 class="mb-4">Tu Progreso de Aprendizaje</h1>
+        
+        @if (_isLoading)
+        {
+            <div class="text-center py-5">
+                <span class="spinner-small" style="width:3rem;height:3rem;border-width:4px;"></span>
+            </div>
+        }
+        else if (_progress != null)
+        {
+            <div class="progress-grid">
+                <div class="glass-panel metric-card">
+                    <h2>Desempeño por Habilidad</h2>
+                    <div class="skills-chart mt-4">
+                        @foreach (var skill in _progress.MetricasPorHabilidad)
+                        {
+                            <div class="skill-row mb-4">
+                                <div class="skill-header">
+                                    <span>@skill.Key</span>
+                                    <span>@skill.Value.Porcentaje.ToString("0")% (@skill.Value.Aciertos/@skill.Value.Total)</span>
+                                </div>
+                                <div class="progress-track mt-2">
+                                    <div class="progress-fill" style="width: @skill.Value.Porcentaje.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                                </div>
+                            </div>
+                        }
+                        @if (_progress.MetricasPorHabilidad.Count == 0)
+                        {
+                            <p class="text-muted">No hay suficientes datos. Completa ejercicios para ver tu gráfica.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="glass-panel rec-card">
+                    <h2>Recomendaciones para ti</h2>
+                    <ul class="rec-list mt-4">
+                        @foreach (var rec in _progress.Recomendaciones)
+                        {
+                            <li class="glass-panel rec-item mb-2">@rec</li>
+                        }
+                        @if (_progress.Recomendaciones.Count == 0)
+                        {
+                            <p class="text-muted">Sigue practicando, no hay recomendaciones específicas ahora.</p>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</RequirePlacement>
+
+<style>
+.progress-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+@@media (max-width: 768px) {
+    .progress-grid { grid-template-columns: 1fr; }
+}
+.metric-card, .rec-card { padding: 2rem; }
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+}
+.progress-track {
+    height: 12px;
+    background: var(--surface-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    transition: width 1s ease-in-out;
+}
+.rec-list { list-style: none; padding: 0; }
+.rec-item { padding: 1rem; border-left: 4px solid var(--accent-color); }
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private ProgressReportResponse? _progress;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await ProgressService.GetProgressAsync(Session.UsuarioId);
+        if (res.IsSuccess)
+        {
+            _progress = res.Data;
+        }
+        else
+        {
+            ToastService.ShowError("Error al cargar progreso");
+        }
+        _isLoading = false;
+    }
+}

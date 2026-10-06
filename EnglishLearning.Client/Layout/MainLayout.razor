@@ -1,0 +1,232 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject UserSession Session
+@inject EnglishLearning.Client.Services.Auth.AuthService AuthService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
+
+<div class="app-shell">
+    <!-- Sidebar para Desktop/Tablet -->
+    <aside class="sidebar glass-panel">
+        <div class="sidebar-header">
+            <h2>EnglishApp</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <NavLink href="/dashboard" class="nav-item" Match="NavLinkMatch.All">
+                <span class="icon">🏠</span> <span class="label">Inicio</span>
+            </NavLink>
+            <NavLink href="/lessons" class="nav-item">
+                <span class="icon">📚</span> <span class="label">Lecciones</span>
+            </NavLink>
+            <NavLink href="/progress" class="nav-item">
+                <span class="icon">📈</span> <span class="label">Progreso</span>
+            </NavLink>
+            <NavLink href="/profile" class="nav-item">
+                <span class="icon">👤</span> <span class="label">Perfil</span>
+            </NavLink>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-logout" @onclick="Logout">
+                <span class="icon">🚪</span> <span class="label">Salir</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Content Area -->
+    <div class="main-content">
+        <!-- TopBar para Mobile -->
+        <header class="topbar glass-panel d-md-none">
+            <h2>EnglishApp</h2>
+            <div class="level-badge-small">@Session.NivelActual</div>
+        </header>
+
+        <main class="page-container">
+            @Body
+        </main>
+    </div>
+
+    <!-- BottomNav para Mobile -->
+    <nav class="bottom-nav glass-panel d-md-none">
+        <NavLink href="/dashboard" class="nav-item" Match="NavLinkMatch.All">
+            <span class="icon">🏠</span>
+        </NavLink>
+        <NavLink href="/lessons" class="nav-item">
+            <span class="icon">📚</span>
+        </NavLink>
+        <NavLink href="/progress" class="nav-item">
+            <span class="icon">📈</span>
+        </NavLink>
+        <NavLink href="/profile" class="nav-item">
+            <span class="icon">👤</span>
+        </NavLink>
+    </nav>
+</div>
+
+<style>
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-color);
+}
+
+.sidebar {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    border-right: 1px solid var(--surface-border);
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    z-index: 100;
+}
+
+.sidebar-header {
+    padding: 2rem 1.5rem;
+}
+
+.sidebar-header h2 {
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.nav-item .icon {
+    font-size: 1.2rem;
+    margin-right: 1rem;
+}
+
+.nav-item:hover {
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+    color: var(--text-main);
+}
+
+.nav-item.active {
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+    color: var(--primary-color);
+    box-shadow: inset 4px 0 0 var(--primary-color);
+}
+
+.sidebar-footer {
+    padding: 1rem;
+}
+
+.btn-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all var(--transition-fast);
+}
+
+.btn-logout:hover {
+    background: hsla(var(--error-h), var(--error-s), var(--error-l), 0.1);
+    color: hsl(var(--error-h), var(--error-s), var(--error-l));
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.page-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+}
+
+.topbar, .bottom-nav { display: none; }
+
+/* Responsive adjustments */
+@@media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main-content { margin-left: 0; padding-bottom: 70px; }
+    
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-radius: 0;
+        border-bottom: 1px solid var(--surface-border);
+    }
+    .topbar h2 { margin: 0; font-size: 1.25rem; color: var(--primary-color); }
+    .level-badge-small {
+        background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+        color: var(--accent-color);
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-weight: bold;
+    }
+
+    .bottom-nav {
+        display: flex;
+        justify-content: space-around;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        padding: 0.5rem;
+        border-radius: 0;
+        border-top: 1px solid var(--surface-border);
+        z-index: 100;
+    }
+    .bottom-nav .nav-item {
+        padding: 0.5rem;
+        flex-direction: column;
+    }
+    .bottom-nav .icon { margin: 0; font-size: 1.5rem; }
+    .bottom-nav .label { display: none; }
+    .bottom-nav .nav-item.active {
+        box-shadow: none;
+        color: var(--primary-color);
+        background: transparent;
+    }
+}
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Session.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Session.OnChange -= StateHasChanged;
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}
