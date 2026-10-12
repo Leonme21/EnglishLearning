@@ -4,6 +4,7 @@ using EnglishLearning.Domain.Options;
 using EnglishLearning.Domain.Services;
 using EnglishLearning.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -14,12 +15,18 @@ public sealed class SeedDataService : ISeedDataService
     private readonly EnglishLearningDbContext _context;
     private readonly SeedDataOptions _options;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ILogger<SeedDataService> _logger;
 
-    public SeedDataService(EnglishLearningDbContext context, IOptions<SeedDataOptions> options, IPasswordHasher passwordHasher)
+    public SeedDataService(
+        EnglishLearningDbContext context,
+        IOptions<SeedDataOptions> options,
+        IPasswordHasher passwordHasher,
+        ILogger<SeedDataService> logger)
     {
         _context = context;
         _options = options.Value;
         _passwordHasher = passwordHasher;
+        _logger = logger;
     }
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -81,9 +88,16 @@ public sealed class SeedDataService : ISeedDataService
         string[] tables = { "Usuarios", "PreguntasDiagnosticas", "Lecciones", "Ejercicios" };
         foreach (var table in tables)
         {
-            var sql = $"SELECT setval(pg_get_serial_sequence('\"{table}\"', 'Id'), " +
-                      $"GREATEST((SELECT COALESCE(MAX(\"Id\"), 0) FROM \"{table}\"), 1));";
-            await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            try
+            {
+                var sql = $"SELECT setval(pg_get_serial_sequence('\"{table}\"', 'Id'), " +
+                          $"GREATEST((SELECT COALESCE(MAX(\"Id\"), 0) FROM \"{table}\"), 1));";
+                await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo sincronizar la secuencia para la tabla {Table}. Continuando ejecución.", table);
+            }
         }
     }
 

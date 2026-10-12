@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<EnglishLearningDbContext>(options =>
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
+                npgsqlOptions.CommandTimeout(120);
                 npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(30),
