@@ -10,7 +10,10 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5133/";
+var configuredUrl = builder.Configuration["ApiBaseUrl"];
+var apiUrl = !string.IsNullOrWhiteSpace(configuredUrl) && (builder.HostEnvironment.IsDevelopment() || !configuredUrl.Contains("localhost"))
+    ? configuredUrl
+    : builder.HostEnvironment.BaseAddress;
 
 // Auth & Storage
 builder.Services.AddScoped<TokenStore>();
@@ -25,6 +28,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AssessmentService>();
 builder.Services.AddScoped<ProgressService>();
 builder.Services.AddScoped<LessonService>();
+builder.Services.AddScoped<ChatService>();
 
 // HTTP Clients
 builder.Services.AddTransient<AuthHeaderHandler>();

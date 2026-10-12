@@ -1,29 +1,40 @@
 using EnglishLearning.Application.Features.Auth.Commands;
 using EnglishLearning.Application.Features.Auth.DTOs;
+using EnglishLearning.Application.Features.Auth.Templates;
+using EnglishLearning.Application.Abstractions;
+using EnglishLearning.Application.Options;
 using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Interfaces;
 using EnglishLearning.Domain.Services;
 using MediatR;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLearning.Application.Features.Auth.Handlers;
 
 public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
     private readonly IUsuarioQueryRepository _usuarioQueryRepository;
-    private readonly IJwtTokenService _jwtTokenService;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IOtpService _otpService;
+    private readonly IEmailService _emailService;
+    private readonly SmtpSettings _smtpSettings;
+    private readonly ILogger<LoginHandler> _logger;
 
     public LoginHandler(
         IUsuarioQueryRepository usuarioQueryRepository,
-        IJwtTokenService jwtTokenService,
         IPasswordHasher passwordHasher,
-        IUnitOfWork unitOfWork)
+        IOtpService otpService,
+        IEmailService emailService,
+        IOptions<SmtpSettings> smtpOptions,
+        ILogger<LoginHandler> logger)
     {
         _usuarioQueryRepository = usuarioQueryRepository;
-        _jwtTokenService = jwtTokenService;
         _passwordHasher = passwordHasher;
-        _unitOfWork = unitOfWork;
+        _otpService = otpService;
+        _emailService = emailService;
+        _smtpSettings = smtpOptions.Value;
+        _logger = logger;
     }
 
     public async Task<Result<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -36,17 +47,37 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
         if (!_passwordHasher.VerifyPassword(request.Password, usuario.PasswordHash))
             return Result<AuthResponse>.Failure(Error.Unauthorized("Auth.InvalidCredentials", "Credenciales inválidas"));
 
-        var accessToken = _jwtTokenService.GenerateAccessToken(usuario.Id, usuario.Correo, usuario.NivelActual.ToString());
-        var refreshToken = await _jwtTokenService.GenerateAndStoreRefreshTokenAsync(usuario.Id, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Generar código OTP
+        var otp = _otpService.GenerateOtp(usuario.Correo);
+        var recipientEmail = usuario.Correo;
+
+        try
+        {
+            var emailHtml = OtpEmailTemplates.BuildOtpEmailHtml(usuario.Nombre, otp);
+            await _emailService.SendEmailAsync(
+                recipientEmail,
+                "Tu código de verificación - English Learning",
+                emailHtml,
+                cancellationToken);
+
+            _logger.LogInformation("Código OTP enviado por correo a {Recipient} para el usuario {Email}.", recipientEmail, usuario.Correo);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fallo al enviar correo con código OTP a {Recipient}", recipientEmail);
+            return Result<AuthResponse>.Failure(Error.Internal("Auth.EmailSendFailed", "No se pudo enviar el correo de verificación. Por favor verifica tu conexión o intenta más tarde."));
+        }
 
         var response = new AuthResponse(
             Success: true,
-            AccessToken: accessToken,
-            RefreshToken: refreshToken,
-            ExpiresAt: DateTime.UtcNow.AddMinutes(15),
+            AccessToken: null,
+            RefreshToken: null,
+            ExpiresAt: null,
             ErrorMessage: null,
-            User: new UserDto(usuario.Id, usuario.Nombre, usuario.Correo, usuario.NivelActual.ToString())
+            User: null,
+            RequiresOtp: true,
+            Email: usuario.Correo,
+            Message: "Se ha enviado un código de verificación de 6 dígitos a tu correo electrónico."
         );
 
         return Result<AuthResponse>.Success(response);

@@ -1,11 +1,7 @@
-using EnglishLearning.Application.Features.Users.Commands;
 using EnglishLearning.Application.Features.Users.DTOs;
 using EnglishLearning.Application.Features.Users.Queries;
 using EnglishLearning.Domain.Common;
-using EnglishLearning.Domain.Entities;
-using EnglishLearning.Domain.Enums;
 using EnglishLearning.Domain.Interfaces;
-using EnglishLearning.Domain.Services;
 using MediatR;
 
 namespace EnglishLearning.Application.Features.Users.Handlers;
@@ -56,40 +52,5 @@ public sealed class GetUserProfileHandler : IRequestHandler<GetUserProfileQuery,
         );
 
         return Result<UserProfileDto>.Success(profile);
-    }
-}
-
-public sealed class RegisterUserHandler : IRequestHandler<RegisterUserCommand, Result<RegisterUserResponse>>
-{
-    private readonly IUsuarioQueryRepository _usuarioQueryRepository;
-    private readonly IUsuarioCommandRepository _usuarioCommandRepository;
-    private readonly IPasswordHasher _passwordHasher;
-
-    public RegisterUserHandler(
-        IUsuarioQueryRepository usuarioQueryRepository,
-        IUsuarioCommandRepository usuarioCommandRepository,
-        IPasswordHasher passwordHasher)
-    {
-        _usuarioQueryRepository = usuarioQueryRepository;
-        _usuarioCommandRepository = usuarioCommandRepository;
-        _passwordHasher = passwordHasher;
-    }
-
-    public async Task<Result<RegisterUserResponse>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
-    {
-        if (await _usuarioQueryRepository.ExisteCorreoAsync(request.Correo, cancellationToken))
-            return Result<RegisterUserResponse>.Failure(Error.Conflict("User.EmailExists", "El correo ya está registrado"));
-
-        var passwordHash = _passwordHasher.HashPassword(request.Password);
-
-        var usuarioResult = Usuario.Create(0, request.Nombre, request.Correo, passwordHash, NivelIngles.SinAsignar);
-        if (usuarioResult.IsFailure)
-            return Result<RegisterUserResponse>.Failure(usuarioResult.Error);
-
-        var usuario = usuarioResult.Value;
-        await _usuarioCommandRepository.AgregarAsync(usuario, cancellationToken);
-
-        var response = new RegisterUserResponse(usuario.Id, usuario.Nombre, usuario.Correo, usuario.NivelActual.ToString());
-        return Result<RegisterUserResponse>.Success(response);
     }
 }

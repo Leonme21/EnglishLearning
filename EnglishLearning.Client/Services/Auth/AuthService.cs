@@ -22,10 +22,29 @@ public class AuthService
         var result = await _apiClient.PostAsync<AuthResponse>("api/v1/auth/login", request);
         if (result.IsSuccess && result.Data != null)
         {
+            if (!result.Data.RequiresOtp && !string.IsNullOrWhiteSpace(result.Data.AccessToken))
+            {
+                await _tokenStore.SetTokensAsync(result.Data.AccessToken, result.Data.RefreshToken);
+                ((JwtAuthStateProvider)_authStateProvider).NotifyUserAuthentication(result.Data.AccessToken);
+            }
+        }
+        return result;
+    }
+
+    public async Task<ApiResult<AuthResponse>> VerifyOtpAsync(VerifyOtpRequest request)
+    {
+        var result = await _apiClient.PostAsync<AuthResponse>("api/v1/auth/verify-otp", request);
+        if (result.IsSuccess && result.Data != null && !string.IsNullOrWhiteSpace(result.Data.AccessToken))
+        {
             await _tokenStore.SetTokensAsync(result.Data.AccessToken, result.Data.RefreshToken);
             ((JwtAuthStateProvider)_authStateProvider).NotifyUserAuthentication(result.Data.AccessToken);
         }
         return result;
+    }
+
+    public async Task<ApiResult<bool>> ResendOtpAsync(ResendOtpRequest request)
+    {
+        return await _apiClient.PostAsync<bool>("api/v1/auth/resend-otp", request);
     }
 
     public async Task<ApiResult<AuthResponse>> RegisterAsync(RegisterRequest request)

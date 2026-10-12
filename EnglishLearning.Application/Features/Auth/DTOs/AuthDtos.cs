@@ -21,13 +21,25 @@ public sealed record RevokeTokenRequest(
     [Required] string RefreshToken
 );
 
+public sealed record VerifyOtpRequest(
+    [Required][EmailAddress] string Email,
+    [Required][MinLength(6)][MaxLength(6)] string Code
+);
+
+public sealed record ResendOtpRequest(
+    [Required][EmailAddress] string Email
+);
+
 public sealed record AuthResponse(
     bool Success,
     string? AccessToken,
     string? RefreshToken,
     DateTime? ExpiresAt,
     string? ErrorMessage,
-    UserDto? User
+    UserDto? User,
+    bool RequiresOtp = false,
+    string? Email = null,
+    string? Message = null
 );
 
 public sealed record UserDto(

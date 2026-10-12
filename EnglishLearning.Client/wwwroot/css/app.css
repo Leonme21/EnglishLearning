@@ -194,6 +194,16 @@ a:hover {
     box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
 }
 
+/* Fix autofill del navegador para tema oscuro */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px hsla(var(--bg-h), var(--bg-s), 5%, 0.95) inset !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 .validation-message {
     color: hsl(var(--error-h), var(--error-s), var(--error-l));
     font-size: 0.875rem;
@@ -250,3 +260,68 @@ a:hover {
 .strength-weak { width: 33%; background: hsl(var(--error-h), var(--error-s), var(--error-l)); }
 .strength-medium { width: 66%; background: var(--level-c1); }
 .strength-strong { width: 100%; background: hsl(var(--success-h), var(--success-s), var(--success-l)); }
+
+/* OTP 2FA Screen Styles */
+.otp-input {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: 0.6rem;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    background: hsla(var(--bg-h), var(--bg-s), 4%, 0.75);
+    border: 2px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+    border-radius: 0.75rem;
+    color: #ffffff;
+    max-width: 270px;
+    margin: 0 auto;
+    display: block;
+    transition: all var(--transition-bounce);
+}
+
+.otp-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 24px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45);
+    outline: none;
+    transform: scale(1.02);
+}
+
+.otp-email-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.15);
+    color: hsl(var(--primary-h), var(--primary-s), 80%);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+}
+
+.btn-secondary {
+    background: hsla(var(--surface-h), var(--surface-s), 25%, 0.4);
+    color: var(--text-main);
+    border: 1px solid var(--surface-border);
+}
+
+.btn-secondary:hover {
+    background: hsla(var(--surface-h), var(--surface-s), 30%, 0.6);
+    transform: translateY(-2px);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+}
+
+.btn-ghost:hover {
+    color: var(--text-main);
+    background: hsla(0, 0%, 100%, 0.05);
+}
+

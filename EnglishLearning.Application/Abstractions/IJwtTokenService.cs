@@ -1,7 +1,6 @@
-using EnglishLearning.Domain.Common;
 using System.Security.Claims;
 
-namespace EnglishLearning.Domain.Services;
+namespace EnglishLearning.Application.Abstractions;
 
 public interface IJwtTokenService
 {

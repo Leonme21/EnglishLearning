@@ -26,16 +26,12 @@ public sealed class SeedDataService : ISeedDataService
     {
         if (!_options.AutoSeedOnStartup) return;
 
-        // Seed demo user
-        if (!await _context.Usuarios.AnyAsync(cancellationToken))
+        // Purge demo user if exists in DB
+        var demoUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == "demo@demo.com", cancellationToken);
+        if (demoUser != null)
         {
-            var passwordHash = _passwordHasher.HashPassword("Demo123!");
-            var demoUser = Usuario.Create(0, "Estudiante Demo", "demo@demo.com", passwordHash, NivelIngles.SinAsignar);
-            if (demoUser.IsSuccess)
-            {
-                _context.Usuarios.Add(demoUser.Value);
-                await _context.SaveChangesAsync(cancellationToken);
-            }
+            _context.Usuarios.Remove(demoUser);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         // Seed diagnostic questions

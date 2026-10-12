@@ -12,7 +12,7 @@ public sealed record DiagnosticQuestionDto(
 );
 
 public sealed record SubmitAssessmentRequest(
-    [Required][Range(1, int.MaxValue)] int UsuarioId,
+    int? UsuarioId,
     [Required][MinLength(8)][MaxLength(20)] IReadOnlyList<SubmitAnswerDto> Respuestas
 );
 

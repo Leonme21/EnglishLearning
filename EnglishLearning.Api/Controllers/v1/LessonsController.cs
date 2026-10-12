@@ -4,10 +4,12 @@ using EnglishLearning.Application.Features.Lessons.Commands;
 using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Enums;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EnglishLearning.Api.Controllers.v1;
 
+[Authorize]
 public sealed class LessonsController : BaseApiController
 {
     private readonly IMediator _mediator;
@@ -41,7 +43,10 @@ public sealed class LessonsController : BaseApiController
     [HttpPost("evaluate")]
     public async Task<IActionResult> EvaluateExercise([FromBody] EvaluateExerciseRequest request, CancellationToken cancellationToken)
     {
-        var command = new EvaluateExerciseCommand(request.UsuarioId, request.EjercicioId, request.RespuestaTexto);
+        if (CurrentUserId is null)
+            return Unauthorized();
+
+        var command = new EvaluateExerciseCommand(CurrentUserId.Value, request.EjercicioId, request.RespuestaTexto);
         var result = await _mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

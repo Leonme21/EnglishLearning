@@ -112,3 +112,52 @@ public sealed class RevokeTokenRequestValidator : AbstractValidator<RevokeTokenR
             .NotEmpty().WithMessage("Refresh token es requerido");
     }
 }
+
+public sealed class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpCommand>
+{
+    public VerifyOtpCommandValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email es requerido")
+            .EmailAddress().WithMessage("Formato de email inválido");
+
+        RuleFor(x => x.Code)
+            .NotEmpty().WithMessage("El código OTP es requerido")
+            .Length(6).WithMessage("El código OTP debe ser de 6 dígitos")
+            .Matches("^[0-9]{6}$").WithMessage("El código OTP debe contener únicamente dígitos");
+    }
+}
+
+public sealed class VerifyOtpRequestValidator : AbstractValidator<VerifyOtpRequest>
+{
+    public VerifyOtpRequestValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email es requerido")
+            .EmailAddress().WithMessage("Formato de email inválido");
+
+        RuleFor(x => x.Code)
+            .NotEmpty().WithMessage("El código OTP es requerido")
+            .Length(6).WithMessage("El código OTP debe ser de 6 dígitos");
+    }
+}
+
+public sealed class ResendOtpCommandValidator : AbstractValidator<ResendOtpCommand>
+{
+    public ResendOtpCommandValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email es requerido")
+            .EmailAddress().WithMessage("Formato de email inválido");
+    }
+}
+
+public sealed class ResendOtpRequestValidator : AbstractValidator<ResendOtpRequest>
+{
+    public ResendOtpRequestValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email es requerido")
+            .EmailAddress().WithMessage("Formato de email inválido");
+    }
+}

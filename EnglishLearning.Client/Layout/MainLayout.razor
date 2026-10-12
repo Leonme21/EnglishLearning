@@ -23,6 +23,9 @@
             <NavLink href="/profile" class="nav-item">
                 <span class="icon">👤</span> <span class="label">Perfil</span>
             </NavLink>
+            <NavLink href="/chat" class="nav-item">
+                <span class="icon">🤖</span> <span class="label">Tutor IA</span>
+            </NavLink>
         </nav>
         <div class="sidebar-footer">
             <button class="btn-logout" @onclick="Logout">
@@ -57,6 +60,9 @@
         </NavLink>
         <NavLink href="/profile" class="nav-item">
             <span class="icon">👤</span>
+        </NavLink>
+        <NavLink href="/chat" class="nav-item">
+            <span class="icon">🤖</span>
         </NavLink>
     </nav>
 </div>
@@ -168,6 +174,7 @@
 @@media (max-width: 768px) {
     .sidebar { display: none; }
     .main-content { margin-left: 0; padding-bottom: 70px; }
+    .page-container { padding: 0.75rem 0.5rem; }
     
     .topbar {
         display: flex;

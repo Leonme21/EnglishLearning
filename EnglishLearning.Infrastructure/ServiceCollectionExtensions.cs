@@ -23,6 +23,11 @@ public static class ServiceCollectionExtensions
         // Options
         services.Configure<JwtOptions>(options => configuration.GetSection(JwtOptions.SectionName).Bind(options));
         services.Configure<SeedDataOptions>(options => configuration.GetSection(SeedDataOptions.SectionName).Bind(options));
+        services.Configure<SmtpSettings>(options => configuration.GetSection(SmtpSettings.SectionName).Bind(options));
+        services.Configure<GeminiSettings>(options => configuration.GetSection(GeminiSettings.SectionName).Bind(options));
+        services.Configure<LevelCalculationOptions>(options => configuration.GetSection(LevelCalculationOptions.SectionName).Bind(options));
+        services.Configure<AssessmentOptions>(options => configuration.GetSection(AssessmentOptions.SectionName).Bind(options));
+        services.Configure<ExerciseEvaluationOptions>(options => configuration.GetSection(ExerciseEvaluationOptions.SectionName).Bind(options));
 
         // Database
         var connectionString = configuration.GetConnectionString("Supabase")
@@ -62,9 +67,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
 
         // Services
-        services.AddScoped<EnglishLearning.Domain.Services.IJwtTokenService, JwtTokenService>();
+        services.AddScoped<EnglishLearning.Application.Abstractions.IJwtTokenService, JwtTokenService>();
         services.AddScoped<EnglishLearning.Domain.Services.IPasswordHasher, PasswordHasher>();
         services.AddScoped<ISeedDataService, SeedDataService>();
+        services.AddScoped<EnglishLearning.Application.Abstractions.IEmailService, EnglishLearning.Infrastructure.Messaging.SmtpEmailService>();
+        services.AddHttpClient<EnglishLearning.Application.Abstractions.IChatService, EnglishLearning.Infrastructure.AI.GeminiChatService>();
+        services.AddScoped<EnglishLearning.Domain.Events.IDomainEventDispatcher, EnglishLearning.Infrastructure.Events.DomainEventDispatcher>();
+        services.AddSingleton<EnglishLearning.Domain.Services.IOtpService, EnglishLearning.Infrastructure.Services.OtpService>();
 
         return services;
     }

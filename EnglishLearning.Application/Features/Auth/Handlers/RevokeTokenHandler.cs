@@ -1,7 +1,7 @@
 using EnglishLearning.Application.Features.Auth.Commands;
+using EnglishLearning.Application.Abstractions;
 using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Interfaces;
-using EnglishLearning.Domain.Services;
 using MediatR;
 
 namespace EnglishLearning.Application.Features.Auth.Handlers;

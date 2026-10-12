@@ -10,6 +10,7 @@
 @inject ApiClient Api
 @inject ToastService ToastService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Test de Nivel - English Learning</PageTitle>
 
@@ -68,6 +69,17 @@
 
             <div class="question-body">
                 <span class="badge-skill mb-2">@q.Habilidad</span>
+
+                @if (IsAudioQuestion(q))
+                {
+                    <div class="audio-player-card mb-4">
+                        <button type="button" class="btn-audio" @onclick="() => PlayAudio(q.Contenido)">
+                            <span class="icon">🔊</span> Reproducir Audio
+                        </button>
+                        <span class="audio-hint">Escucha atentamente la pronunciación para responder</span>
+                    </div>
+                }
+
                 <h3 class="mb-4">@q.Contenido</h3>
 
                 <div class="options-list">
@@ -161,6 +173,41 @@
     font-size: 0.85rem;
     font-weight: 600;
     border: 1px solid var(--surface-border);
+}
+.audio-player-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.12), hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08));
+    border: 1px solid hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+    border-radius: 1rem;
+    margin: 1rem 0;
+    text-align: center;
+}
+.btn-audio {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    padding: 0.85rem 1.75rem;
+    border-radius: 2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+    transition: transform var(--transition-bounce), box-shadow var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-audio:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.5);
+}
+.audio-hint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
 }
 .options-list {
     display: flex;
@@ -278,5 +325,45 @@
     private void GoToDashboard()
     {
         Navigation.NavigateTo("/dashboard");
+    }
+
+    private bool IsAudioQuestion(DiagnosticQuestion q)
+    {
+        return q.Habilidad.Equals("Listening", StringComparison.OrdinalIgnoreCase)
+            || q.Habilidad.Equals("Speaking", StringComparison.OrdinalIgnoreCase)
+            || q.Contenido.Contains("Audio:", StringComparison.OrdinalIgnoreCase)
+            || q.Contenido.Contains("Pronunciation:", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetAudioText(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+
+        var matches = System.Text.RegularExpressions.Regex.Matches(content, @"'([^']+)'");
+        if (matches.Count > 0)
+        {
+            var phrases = matches
+                .Select(m => m.Groups[1].Value.Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s) && !s.Contains("sound", StringComparison.OrdinalIgnoreCase))
+                .Distinct();
+            var combined = string.Join(". ", phrases);
+            if (!string.IsNullOrWhiteSpace(combined))
+                return combined;
+        }
+
+        return content.Replace("Audio transcript:", "", StringComparison.OrdinalIgnoreCase)
+                      .Replace("Audio:", "", StringComparison.OrdinalIgnoreCase)
+                      .Replace("Pronunciation:", "", StringComparison.OrdinalIgnoreCase)
+                      .Trim();
+    }
+
+    private async Task PlayAudio(string text)
+    {
+        var audioText = GetAudioText(text);
+        if (string.IsNullOrWhiteSpace(audioText))
+            audioText = text;
+
+        var script = $"var u = new SpeechSynthesisUtterance('{audioText.Replace("'", "\\'")}'); u.lang='en-US'; u.rate = 0.85; speechSynthesis.speak(u);";
+        await JSRuntime.InvokeVoidAsync("eval", script);
     }
 }

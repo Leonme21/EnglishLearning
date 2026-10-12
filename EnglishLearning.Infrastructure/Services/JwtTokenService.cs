@@ -1,7 +1,7 @@
+using EnglishLearning.Application.Abstractions;
 using EnglishLearning.Application.Options;
 using EnglishLearning.Domain.Entities;
 using EnglishLearning.Domain.Interfaces;
-using EnglishLearning.Domain.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,7 +11,7 @@ using System.Text;
 
 namespace EnglishLearning.Infrastructure.Services;
 
-public sealed class JwtTokenService : EnglishLearning.Domain.Services.IJwtTokenService
+public sealed class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _options;
     private readonly SymmetricSecurityKey _signingKey;

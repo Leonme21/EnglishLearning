@@ -1,10 +1,8 @@
 using EnglishLearning.Domain.Enums;
 using EnglishLearning.Domain.ValueObjects;
-using MediatR;
-
 namespace EnglishLearning.Domain.Events;
 
-public interface IDomainEvent : INotification
+public interface IDomainEvent
 {
     DateTime OccurredOn { get; }
     Guid EventId { get; }
@@ -47,4 +45,9 @@ public interface IDomainEventDispatcher
 {
     Task DispatchAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default);
     Task DispatchAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default);
+}
+
+public interface IDomainEventHandler<in TEvent> where TEvent : IDomainEvent
+{
+    Task HandleAsync(TEvent domainEvent, CancellationToken cancellationToken = default);
 }

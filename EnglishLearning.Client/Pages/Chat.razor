@@ -1,0 +1,693 @@
+@page "/chat"
+@attribute [Authorize]
+@inject ChatService ChatService
+@inject ToastService ToastService
+@inject UserSession Session
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Tutor IA - English Learning</PageTitle>
+
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header glass-panel">
+        <div class="header-info">
+            <div class="avatar-bot">
+                <span>🤖</span>
+                <span class="status-indicator"></span>
+            </div>
+            <div class="header-titles">
+                <h2>Tutor de Inglés IA</h2>
+                <p class="subtitle">
+                    Gemini IA &bull; Nivel <span class="badge-level">@(string.IsNullOrWhiteSpace(Session.NivelActual) ? "A1" : Session.NivelActual)</span>
+                </p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-clear" @onclick="ClearChat" title="Reiniciar conversación">
+                <span class="clear-icon">🔄</span>
+                <span class="clear-text">Nueva</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Suggestions -->
+    @if (_messages.Count <= 1)
+    {
+        <div class="suggestions-container">
+            <div class="suggestions-chips">
+                @foreach (var prompt in _suggestedPrompts)
+                {
+                    <button class="chip" @onclick="() => SendQuickPrompt(prompt)">
+                        @prompt
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Messages Window -->
+    <div class="messages-window glass-panel" id="messages-container">
+        @foreach (var msg in _messages)
+        {
+            <div class="message-row @(msg.IsUser ? "user-row" : "bot-row")">
+                @if (!msg.IsUser)
+                {
+                    <div class="msg-avatar bot-avatar">🤖</div>
+                }
+                
+                <div class="message-bubble @(msg.IsUser ? "user-bubble" : "bot-bubble")">
+                    @if (msg.IsLoading)
+                    {
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="message-text">@((MarkupString)FormatMessage(msg.Content))</div>
+                        <div class="message-meta">
+                            @if (!msg.IsUser && !string.IsNullOrWhiteSpace(msg.Content))
+                            {
+                                <button type="button" class="btn-listen" @onclick="() => SpeakMessage(msg.Content)" title="Escuchar pronunciación">
+                                    🔊 <span class="listen-text">Escuchar</span>
+                                </button>
+                            }
+                            <span class="message-time">@msg.Timestamp.ToString("HH:mm")</span>
+                        </div>
+                    }
+                </div>
+
+                @if (msg.IsUser)
+                {
+                    <div class="msg-avatar user-avatar">👤</div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Input Box -->
+    <div class="chat-input-area glass-panel">
+        <form @onsubmit="SendMessageAsync" class="input-form">
+            <input type="text"
+                   class="chat-input"
+                   placeholder="Escribe tu mensaje en inglés o español..."
+                   @bind="_currentMessage"
+                   @bind:event="oninput"
+                   disabled="@_isSending"
+                   maxlength="1000" />
+            <button type="submit" 
+                    class="btn-send" 
+                    disabled="@(string.IsNullOrWhiteSpace(_currentMessage) || _isSending)"
+                    title="Enviar mensaje">
+                @if (_isSending)
+                {
+                    <span class="spinner-small"></span>
+                }
+                else
+                {
+                    <span class="send-icon">➤</span>
+                    <span class="send-text">Enviar</span>
+                }
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 4.5rem);
+    max-height: calc(100vh - 4.5rem);
+    max-width: 900px;
+    margin: 0 auto;
+    gap: 0.75rem;
+    min-height: 0;
+    width: 100%;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+    border-radius: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    backdrop-filter: blur(16px);
+    flex-shrink: 0;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.avatar-bot {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, hsl(var(--primary-h), 80%, 50%), hsl(var(--accent-h), 80%, 45%));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    flex-shrink: 0;
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 11px;
+    height: 11px;
+    background-color: #10b981;
+    border-radius: 50%;
+    border: 2px solid var(--bg-color);
+    box-shadow: 0 0 8px #10b981;
+}
+
+.header-titles {
+    min-width: 0;
+}
+
+.chat-header h2 {
+    font-size: 1.15rem;
+    margin: 0;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-header .subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-level {
+    background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+    color: var(--accent-color);
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.btn-clear {
+    background: transparent;
+    border: 1px solid var(--surface-border);
+    color: var(--text-muted);
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    border-color: var(--primary-color);
+}
+
+.suggestions-container {
+    flex-shrink: 0;
+    padding: 0 0.25rem;
+}
+
+.suggestions-chips {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.suggestions-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.chip {
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    color: var(--text-main);
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.chip:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.messages-window {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem;
+    border-radius: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+.message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.65rem;
+    max-width: 85%;
+}
+
+.user-row {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.bot-row {
+    align-self: flex-start;
+}
+
+.msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    background: var(--primary-color);
+}
+
+.message-bubble {
+    padding: 0.85rem 1.15rem;
+    border-radius: 18px;
+    position: relative;
+    word-break: break-word;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    line-height: 1.5;
+    max-width: 100%;
+}
+
+.user-bubble {
+    background: linear-gradient(135deg, var(--primary-color), hsl(var(--primary-h), 80%, 45%));
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.bot-bubble {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--surface-border);
+    color: var(--text-main);
+    border-bottom-left-radius: 4px;
+}
+
+.message-text {
+    font-size: 0.92rem;
+    white-space: pre-wrap;
+    line-height: 1.55;
+}
+
+.message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    padding-top: 0.25rem;
+}
+
+.btn-listen {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--accent-color);
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-listen:hover {
+    background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+    border-color: var(--accent-color);
+}
+
+.message-time {
+    display: block;
+    font-size: 0.68rem;
+    opacity: 0.6;
+    margin-left: auto;
+}
+
+.chat-input-area {
+    padding: 0.65rem 0.85rem;
+    border-radius: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    flex-shrink: 0;
+}
+
+.input-form {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+}
+
+.chat-input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    color: var(--text-main);
+    font-size: 0.92rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.chat-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.btn-send {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    padding: 0.8rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-send:hover:not(:disabled) {
+    opacity: 0.95;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Typing Indicator Animation */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.3rem 0.5rem;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@@keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+/* Media Queries para Tablet y Móvil */
+@@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 135px);
+        height: calc(100dvh - 135px);
+        max-height: calc(100dvh - 135px);
+        gap: 0.5rem;
+        padding: 0;
+    }
+
+    .chat-header {
+        padding: 0.6rem 0.85rem;
+        border-radius: 12px;
+    }
+
+    .avatar-bot {
+        width: 36px;
+        height: 36px;
+        font-size: 1.15rem;
+    }
+
+    .chat-header h2 {
+        font-size: 0.98rem;
+    }
+
+    .chat-header .subtitle {
+        font-size: 0.72rem;
+    }
+
+    .btn-clear {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        border-radius: 6px;
+    }
+
+    .messages-window {
+        padding: 0.85rem 0.6rem;
+        border-radius: 12px;
+        gap: 0.75rem;
+    }
+
+    .message-row {
+        max-width: 93%;
+        gap: 0.4rem;
+    }
+
+    .msg-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
+    }
+
+    .message-bubble {
+        padding: 0.7rem 0.85rem;
+        border-radius: 14px;
+    }
+
+    .message-text {
+        font-size: 0.88rem;
+    }
+
+    .chat-input-area {
+        padding: 0.5rem 0.65rem;
+        border-radius: 12px;
+    }
+
+    .input-form {
+        gap: 0.5rem;
+    }
+
+    .chat-input {
+        padding: 0.65rem 0.8rem;
+        font-size: 0.88rem;
+        border-radius: 10px;
+    }
+
+    .btn-send {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+}
+
+@@media (max-width: 480px) {
+    .clear-text {
+        display: none;
+    }
+
+    .btn-clear {
+        padding: 0.35rem 0.45rem;
+    }
+
+    .send-text {
+        display: none;
+    }
+
+    .send-icon {
+        font-size: 1.1rem;
+    }
+
+    .btn-send {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .message-row {
+        max-width: 96%;
+    }
+}
+</style>
+
+@code {
+    private List<ChatMessage> _messages = new();
+    private string _currentMessage = string.Empty;
+    private bool _isSending = false;
+
+    private readonly List<string> _suggestedPrompts = new()
+    {
+        "¿Cuál es la diferencia entre 'make' y 'do'?",
+        "Corrige esta frase: 'I have 25 years and I am agree'",
+        "Explícame el Present Perfect con 3 ejemplos",
+        "Practiquemos conversación informal en inglés",
+        "¿Cuáles son los falsos amigos más comunes?"
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeGreeting();
+    }
+
+    private void InitializeGreeting()
+    {
+        _messages.Clear();
+        var nivel = string.IsNullOrWhiteSpace(Session.NivelActual) ? "A1" : Session.NivelActual;
+        _messages.Add(ChatMessage.Bot(
+            $"¡Hello! 👋 Soy tu tutor de inglés con Inteligencia Artificial.\n" +
+            $"Actualmente estás en el nivel **{nivel}**.\n\n" +
+            $"Puedo ayudarte a resolver dudas gramaticales, corregir frases, explicar pronunciación o practicar conversación. ¿De qué te gustaría hablar hoy?"
+        ));
+    }
+
+    private void ClearChat()
+    {
+        InitializeGreeting();
+        ToastService.ShowInfo("Conversación reiniciada.");
+    }
+
+    private async Task SendQuickPrompt(string prompt)
+    {
+        _currentMessage = prompt;
+        await SendMessageAsync();
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentMessage) || _isSending) return;
+
+        var userText = _currentMessage.Trim();
+        _currentMessage = string.Empty;
+
+        // Agregar mensaje de usuario
+        _messages.Add(ChatMessage.User(userText));
+
+        // Agregar placeholder de carga
+        var loadingMsg = ChatMessage.Loading();
+        _messages.Add(loadingMsg);
+        _isSending = true;
+
+        StateHasChanged();
+        await ScrollToBottomAsync();
+
+        var result = await ChatService.SendMessageAsync(userText);
+
+        _messages.Remove(loadingMsg);
+        _isSending = false;
+
+        if (result.IsSuccess && result.Data != null)
+        {
+            _messages.Add(ChatMessage.Bot(result.Data.Response));
+        }
+        else
+        {
+            var errorMsg = result.Error?.Message ?? "No se pudo obtener respuesta del tutor. Por favor intenta de nuevo.";
+            _messages.Add(ChatMessage.Bot($"⚠️ {errorMsg}"));
+            ToastService.ShowError(errorMsg);
+        }
+
+        StateHasChanged();
+        await ScrollToBottomAsync();
+    }
+
+    private async Task SpeakMessage(string text)
+    {
+        try
+        {
+            // Limpiar etiquetas HTML y formato para el sintetizador de voz
+            var clean = System.Text.RegularExpressions.Regex.Replace(text, @"<[^>]*>", " ");
+            clean = System.Text.RegularExpressions.Regex.Replace(clean, @"\*+", "");
+            await JSRuntime.InvokeVoidAsync("eval", 
+                $"if('speechSynthesis' in window) {{ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance({System.Text.Json.JsonSerializer.Serialize(clean)}); u.lang = 'en-US'; window.speechSynthesis.speak(u); }}");
+        }
+        catch
+        {
+            // Ignorar excepciones si el navegador no permite audio o está bloqueado
+        }
+    }
+
+    private string FormatMessage(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        // Escape básico y soporte para formato de negritas **texto**
+        var escaped = System.Net.WebUtility.HtmlEncode(text);
+        var formatted = System.Text.RegularExpressions.Regex.Replace(
+            escaped, @"\*\*(.*?)\*\*", "<strong>$1</strong>");
+
+        return formatted.Replace("\n", "<br/>");
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", 
+                "const el = document.getElementById('messages-container'); if(el) { el.scrollTop = el.scrollHeight; }");
+        }
+        catch
+        {
+            // Ignorar en caso de error de interop
+        }
+    }
+}

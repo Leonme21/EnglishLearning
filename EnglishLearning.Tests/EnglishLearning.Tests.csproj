@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishLearning.Application\EnglishLearning.Application.csproj" />
     <ProjectReference Include="..\EnglishLearning.Domain\EnglishLearning.Domain.csproj" />
+    <ProjectReference Include="..\EnglishLearning.Infrastructure\EnglishLearning.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

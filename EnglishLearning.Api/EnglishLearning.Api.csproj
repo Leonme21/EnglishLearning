@@ -23,11 +23,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EnglishLearning.Application\EnglishLearning.Application.csproj" />
     <ProjectReference Include="..\EnglishLearning.Infrastructure\EnglishLearning.Infrastructure.csproj" />
+    <ProjectReference Include="..\EnglishLearning.Client\EnglishLearning.Client.csproj" />
   </ItemGroup>
 
 </Project>

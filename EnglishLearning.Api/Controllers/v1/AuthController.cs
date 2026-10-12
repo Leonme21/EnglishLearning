@@ -3,6 +3,7 @@ using EnglishLearning.Application.Features.Auth.Commands;
 using EnglishLearning.Application.Features.Users.Queries;
 using EnglishLearning.Domain.Common;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EnglishLearning.Api.Controllers.v1;
@@ -17,6 +18,22 @@ public sealed class AuthController : BaseApiController
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var command = new LoginCommand(request.Email, request.Password);
+        var result = await _mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    [HttpPost("verify-otp")]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
+    {
+        var command = new VerifyOtpCommand(request.Email, request.Code);
+        var result = await _mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    [HttpPost("resend-otp")]
+    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ResendOtpCommand(request.Email);
         var result = await _mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
@@ -45,15 +62,14 @@ public sealed class AuthController : BaseApiController
         return HandleResult(result);
     }
 
+    [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken cancellationToken)
     {
-        // Get current user from claims
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        if (CurrentUserId is null)
             return Unauthorized();
 
-        var query = new GetUserProfileQuery(userId);
+        var query = new GetUserProfileQuery(CurrentUserId.Value);
         var result = await _mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }

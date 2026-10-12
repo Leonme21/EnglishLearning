@@ -22,3 +22,12 @@ public sealed record RefreshTokenCommand(
 public sealed record RevokeTokenCommand(
     string RefreshToken
 ) : IRequest<Result<bool>>;
+
+public sealed record VerifyOtpCommand(
+    string Email,
+    string Code
+) : IRequest<Result<AuthResponse>>;
+
+public sealed record ResendOtpCommand(
+    string Email
+) : IRequest<Result<bool>>;

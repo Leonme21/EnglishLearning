@@ -4,12 +4,17 @@
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
-Publish/
+[Pp]ublish/
+[Tt]est[Rr]esults/
 *.user
 *.suo
 .vs/
 *.userosscache
 *.sln.docstates
+*.userprefs
+*.pidb
+*.booproj
+*.visualstudio/
 
 # =========================
 # Angular / Node.js
@@ -18,8 +23,17 @@ node_modules/
 dist/
 .angular/
 coverage/
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Logs & Temp
+# =========================
+*.log
+*.tmp
+*.temp
+scratch/
 
 # =========================
 # Entornos y Secretos
@@ -38,3 +52,11 @@ appsettings.*.json
 .idea/
 .vscode/
 *.swp
+_ReSharper*/
+*.DotSettings.user
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
