@@ -22,8 +22,8 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<EnglishLea
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = configuration.GetConnectionString("Supabase")
-            ?? configuration.GetConnectionString("DefaultConnection")
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? configuration.GetConnectionString("Supabase")
             ?? "Host=localhost;Database=englishlearning;Username=postgres;Password=postgres;Port=5432";
 
         var optionsBuilder = new DbContextOptionsBuilder<EnglishLearningDbContext>();

@@ -30,9 +30,9 @@ public static class ServiceCollectionExtensions
         services.Configure<ExerciseEvaluationOptions>(options => configuration.GetSection(ExerciseEvaluationOptions.SectionName).Bind(options));
 
         // Database
-        var connectionString = configuration.GetConnectionString("Supabase")
-            ?? configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'Supabase' or 'DefaultConnection' not found.");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? configuration.GetConnectionString("Supabase")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' or 'Supabase' not found.");
 
         services.AddDbContext<EnglishLearningDbContext>(options =>
             options.UseNpgsql(connectionString, npgsqlOptions =>

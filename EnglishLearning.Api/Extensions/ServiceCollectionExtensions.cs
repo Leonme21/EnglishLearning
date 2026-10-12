@@ -104,7 +104,7 @@ public static class ServiceCollectionExtensions
 
         // Health Checks
         services.AddHealthChecks()
-            .AddNpgSql(configuration.GetConnectionString("Supabase") ?? configuration.GetConnectionString("DefaultConnection") ?? "");
+            .AddNpgSql(configuration.GetConnectionString("DefaultConnection") ?? configuration.GetConnectionString("Supabase") ?? "");
 
         // Application and Infrastructure
         services.AddApplication();

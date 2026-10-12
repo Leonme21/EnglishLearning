@@ -30,8 +30,8 @@ public sealed class OtpService : IOtpService
             AbsoluteExpirationRelativeToNow = DefaultOtpLifetime
         });
 
-        _logger.LogInformation("Código OTP generado satisfactoriamente para {Email} con expiración de {Minutes} minutos.",
-            normalizedEmail, DefaultOtpLifetime.TotalMinutes);
+        _logger.LogInformation("Código OTP generado satisfactoriamente para {Email} con expiración de {Minutes} minutos. [CÓDIGO OTP: {Code}]",
+            normalizedEmail, DefaultOtpLifetime.TotalMinutes, code);
 
         return code;
     }
