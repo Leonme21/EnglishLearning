@@ -666,13 +666,9 @@ En el plan **Free** de Render, los contenedores entran en reposo tras 15 minutos
 
 ## 👨‍💻 Autor
 
-Desarrollado por **Miguel León**  
+Desarrollado por **Miguel León y Doncan Casquete**  
 * GitHub: [@Leonme21](https://github.com/Leonme21)
 * Repositorio del Proyecto: [Leonme21/EnglishLearning](https://github.com/Leonme21/EnglishLearning)
 
 ---
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia **MIT**. Consulta el archivo `LICENSE` para más información.
 
