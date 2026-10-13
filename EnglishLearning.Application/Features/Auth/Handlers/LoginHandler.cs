@@ -53,7 +53,7 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
         try
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             var emailHtml = OtpEmailTemplates.BuildOtpEmailHtml(usuario.Nombre, otp);
             await _emailService.SendEmailAsync(
@@ -66,7 +66,10 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "No se pudo enviar el correo con el código OTP a {Recipient} (puertos SMTP pueden estar bloqueados en Render Free). Código: [{Otp}]", recipientEmail, otp);
+            _logger.LogError(ex, "Error al enviar correo con código OTP a {Recipient}", recipientEmail);
+            return Result<AuthResponse>.Failure(Error.Internal(
+                "Auth.EmailSendFailed",
+                "No se pudo enviar el código de verificación por correo electrónico. Por favor verifica que tu servicio de correo esté configurado o intenta nuevamente."));
         }
 
         var response = new AuthResponse(
@@ -78,7 +81,7 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
             User: null,
             RequiresOtp: true,
             Email: usuario.Correo,
-            Message: $"Código de verificación: {otp} (también enviado a tu correo si SMTP está disponible)"
+            Message: "Hemos enviado un código de verificación a tu correo electrónico."
         );
 
         return Result<AuthResponse>.Success(response);

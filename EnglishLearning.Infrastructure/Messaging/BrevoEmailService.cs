@@ -27,11 +27,29 @@ public sealed class BrevoEmailService : IEmailService
         ArgumentException.ThrowIfNullOrWhiteSpace(to);
         ArgumentException.ThrowIfNullOrWhiteSpace(subject);
 
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+        var apiKey = !string.IsNullOrWhiteSpace(_settings.ApiKey) && _settings.ApiKey != "YOUR_BREVO_API_KEY"
+            ? _settings.ApiKey
+            : Environment.GetEnvironmentVariable("Brevo__ApiKey")
+              ?? Environment.GetEnvironmentVariable("Brevo:ApiKey")
+              ?? Environment.GetEnvironmentVariable("BREVO_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(apiKey))
         {
-            _logger.LogWarning("Brevo API Key no está configurada. Correo a {To} no enviado.", to);
-            return;
+            _logger.LogError("Brevo API Key no está configurada en el servidor (Brevo__ApiKey). Correo a {To} no enviado.", to);
+            throw new InvalidOperationException("La clave API de Brevo no está configurada en las variables de entorno del servidor (Brevo__ApiKey).");
         }
+
+        var fromEmail = !string.IsNullOrWhiteSpace(_settings.FromEmail) && _settings.FromEmail != "YOUR_BREVO_FROM_EMAIL"
+            ? _settings.FromEmail
+            : Environment.GetEnvironmentVariable("Brevo__FromEmail")
+              ?? Environment.GetEnvironmentVariable("Brevo:FromEmail")
+              ?? Environment.GetEnvironmentVariable("BREVO_FROM_EMAIL")
+              ?? "mleonme21@gmail.com";
+
+        var fromName = !string.IsNullOrWhiteSpace(_settings.FromName)
+            ? _settings.FromName
+            : Environment.GetEnvironmentVariable("Brevo__FromName")
+              ?? "English Learning Platform";
 
         try
         {
@@ -39,8 +57,8 @@ public sealed class BrevoEmailService : IEmailService
             {
                 sender = new
                 {
-                    name = _settings.FromName,
-                    email = _settings.FromEmail
+                    name = fromName,
+                    email = fromEmail
                 },
                 to = new[]
                 {
@@ -55,7 +73,7 @@ public sealed class BrevoEmailService : IEmailService
                 Content = JsonContent.Create(payload)
             };
 
-            request.Headers.Add("api-key", _settings.ApiKey.Trim());
+            request.Headers.Add("api-key", apiKey.Trim());
             request.Headers.Add("accept", "application/json");
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -64,7 +82,7 @@ public sealed class BrevoEmailService : IEmailService
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogError("Error al enviar correo con Brevo. Status: {StatusCode}, Respuesta: {ErrorBody}", response.StatusCode, errorBody);
-                throw new InvalidOperationException($"Error Brevo API: {response.StatusCode} - {errorBody}");
+                throw new InvalidOperationException($"Error Brevo API ({response.StatusCode}): {errorBody}");
             }
 
             _logger.LogInformation("Correo enviado con éxito vía Brevo API a {To} (Asunto: {Subject})", to, subject);
@@ -76,3 +94,4 @@ public sealed class BrevoEmailService : IEmailService
         }
     }
 }
+
