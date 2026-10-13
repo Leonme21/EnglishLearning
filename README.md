@@ -1,89 +1,137 @@
 # English Learning Platform
 
-Plataforma full-stack de aprendizaje de inglés construida con **.NET 9**, **Blazor WebAssembly** y **PostgreSQL**. Permite a los usuarios aprender inglés de forma progresiva a través de lecciones adaptadas a su nivel CEFR, evaluaciones diagnósticas, seguimiento de progreso y un tutor de inteligencia artificial impulsado por Google Gemini.
+[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.8_Flash-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
+[![Brevo](https://img.shields.io/badge/Brevo-Email_API-0092FF?logo=sendinblue&logoColor=white)](https://www.brevo.com/)
+[![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render&logoColor=black)](https://render.com/)
+[![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen?logo=xunit&logoColor=white)](https://xunit.net/)
+
+Plataforma full-stack de aprendizaje de inglés construida con **.NET 9**, **Blazor WebAssembly** y **PostgreSQL**. Permite a los estudiantes aprender inglés de forma progresiva a través de lecciones dinámicas adaptadas a su nivel CEFR, evaluaciones diagnósticas multifactoriales, reportes analíticos de evolución y un **Tutor de Inteligencia Artificial impulsado por Google Gemini** con síntesis de voz en tiempo real.
+
+---
+
+## 🌐 Enlaces del Proyecto en Vivo
+
+* 🚀 **Aplicación Web en Producción**: [https://englishlearning-mum4.onrender.com](https://englishlearning-mum4.onrender.com)
+* 📖 **Documentación Interactiva (Swagger OpenAPI)**: [https://englishlearning-mum4.onrender.com/swagger](https://englishlearning-mum4.onrender.com/swagger)
+* 🩺 **Health Check del Servidor & Base de Datos**: [https://englishlearning-mum4.onrender.com/health](https://englishlearning-mum4.onrender.com/health)
 
 ---
 
 ## Índice
 
-- [Características](#características)
-- [Arquitectura](#arquitectura)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Stack tecnológico](#stack-tecnológico)
-- [Dominio y modelo de datos](#dominio-y-modelo-de-datos)
-- [API — Endpoints](#api--endpoints)
-- [Flujo de autenticación](#flujo-de-autenticación)
-- [Sistema de niveles CEFR](#sistema-de-niveles-cefr)
-- [Servicios externos](#servicios-externos)
-- [Setup local](#setup-local)
+- [Características Principales](#características-principales)
+- [Documentación Interactiva (Swagger / OpenAPI)](#documentación-interactiva-swagger--openapi)
+- [Arquitectura del Sistema](#arquitectura-del-sistema)
+- [Estructura del Repositorio](#estructura-del-repositorio)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Dominio y Modelo de Datos](#dominio-y-modelo-de-datos)
+- [API — Catálogo Completo de Endpoints](#api--catálogo-completo-de-endpoints)
+- [Flujo de Autenticación y Seguridad OTP](#flujo-de-autenticación-y-seguridad-otp)
+- [Sistema de Niveles CEFR y Evaluación](#sistema-de-niveles-cefr-y-evaluación)
+- [Tutor de Inteligencia Artificial (Google Gemini)](#tutor-de-inteligencia-artificial-google-gemini)
+- [Servicio de Mensajería Transaccional (Brevo API)](#servicio-de-mensajería-transaccional-brevo-api)
+- [Ejemplos Prácticos de Consumo (cURL)](#ejemplos-prácticos-de-consumo-curl)
+- [Setup Local](#setup-local)
 - [Setup con Docker](#setup-con-docker)
-- [Configuración — variables de entorno](#configuración--variables-de-entorno)
-- [Migraciones EF Core](#migraciones-ef-core)
-- [Tests](#tests)
-- [Deploy en Render](#deploy-en-render)
+- [Configuración y Variables de Entorno](#configuración-y-variables-de-entorno)
+- [Migraciones y Seeding de EF Core](#migraciones-y-seeding-de-ef-core)
+- [Tests Unitarios y Cobertura](#tests-unitarios-y-cobertura)
+- [Despliegue en Render](#despliegue-en-render)
+- [Preguntas Frecuentes y Troubleshooting](#preguntas-frecuentes-y-troubleshooting)
 
 ---
 
-## Características
+## Características Principales
 
-- **Evaluación diagnóstica**: test de posicionamiento inicial que mide las 4 habilidades (Reading, Listening, Writing, Speaking) y asigna automáticamente el nivel CEFR del usuario (A1 → C1).
-- **Lecciones por nivel**: contenido filtrado dinámicamente por el nivel CEFR del usuario. Cada lección agrupa ejercicios de distintos tipos.
-- **Ejercicios con evaluación inteligente**: soporte para tres estrategias de evaluación configurables — coincidencia exacta (case-insensitive), fuzzy matching con umbral configurable y evaluación por expresiones regulares.
-- **Tutor de IA (Gemini)**: chat interactivo con Google Gemini AI para resolver dudas gramaticales, corregir frases, practicar conversación y explicar pronunciación. Incluye síntesis de voz (Web Speech API) para escuchar las respuestas del tutor.
-- **Seguimiento de progreso**: historial de respuestas, porcentaje completado por nivel y reporte de evolución.
-- **Autenticación completa**: registro/login con JWT Bearer + Refresh Token + OTP por email para verificación de cuenta.
-- **Rate limiting**: protección contra abuso en todos los endpoints con reglas granulares por IP.
-- **Health check**: endpoint `/health` con comprobación activa de la base de datos PostgreSQL.
-- **Seed automático**: datos iniciales de lecciones, ejercicios y preguntas diagnósticas cargados automáticamente al iniciar.
-- **Frontend Blazor WASM**: SPA servida desde el mismo proceso ASP.NET Core, sin servidor separado.
+* 🎯 **Evaluación Diagnóstica (Placement Test)**: Test de posicionamiento inicial que mide integralmente las 4 habilidades esenciales del idioma (*Reading, Listening, Writing, Speaking*) y calcula con precisión el nivel CEFR del estudiante (**A1 → C1**).
+* 📚 **Lecciones Dinámicas por Nivel**: Contenido educativo filtrado por el nivel CEFR actual. Cada lección agrupa lecturas, audios y ejercicios estructurados de dificultad progresiva.
+* 🧠 **Evaluación Inteligente de Ejercicios**: Motor de evaluación multi-estrategia desacoplado:
+  * `CaseInsensitiveExact`: Coincidencia exacta ignorando diferencias de mayúsculas/minúsculas.
+  * `Fuzzy`: Coincidencia aproximada mediante similitud de cadenas (*Levenshtein distance*) con umbral configurable (default 85%).
+  * `Regex`: Evaluación basada en expresiones regulares para validar patrones y respuestas abiertas.
+* 🤖 **Tutor de IA (Google Gemini 3.8 Flash)**: Asistente conversacional especializado en pedagogía de la lengua inglesa. Resuelve dudas gramaticales, corrige oraciones con explicaciones constructivas, practica diálogos y orienta sobre fonética IPA.
+* 🗣️ **Text-to-Speech Integrado**: Síntesis de voz nativa del navegador (*Web Speech API*) para escuchar la pronunciación exacta de las respuestas del tutor.
+* 📊 **Analítica y Seguimiento de Progreso**: Panel con métricas de desempeño, historial de respuestas por ejercicio, porcentaje de avance por nivel y recomendaciones personalizadas.
+* 🔐 **Seguridad y Autenticación en 2 Fases**: Arquitectura robusta con **JWT Bearer**, rotación de **Refresh Tokens** y **códigos OTP de 6 dígitos** enviados por correo electrónico mediante Brevo API HTTPS.
+* 🛡️ **Resiliencia y Rate Limiting**: Protección granular por IP con `AspNetCoreRateLimit` para mitigar ataques de fuerza bruta y abusos, sumado a políticas de reintento y fallback con `Polly`.
+* 📦 **Contenedor Docker Monolítico Unificado**: La API ASP.NET Core aloja y sirve directamente los archivos estáticos de Blazor WebAssembly (`UseBlazorFrameworkFiles`, `UseStaticFiles`, `MapFallbackToFile("index.html")`), eliminando la necesidad de múltiples servidores o problemas de CORS en producción.
 
 ---
 
-## Arquitectura
+## Documentación Interactiva (Swagger / OpenAPI)
 
-El proyecto sigue **Clean Architecture** con separación estricta de capas. La capa de aplicación implementa el patrón **CQRS** con MediatR y aplica principios de **DDD** (Aggregates, Value Objects, Domain Events).
+La API cuenta con documentación interactiva basada en la especificación **OpenAPI 3.0** generada con **Swashbuckle**. Permite explorar todas las rutas, consultar los esquemas de datos de entrada/salida y probar las solicitudes en vivo directamente desde el navegador.
 
-```
+### 📍 Acceso a Swagger:
+* **Entorno de Producción**: [https://englishlearning-mum4.onrender.com/swagger](https://englishlearning-mum4.onrender.com/swagger)
+* **Entorno Local**: [https://localhost:7017/swagger](https://localhost:7017/swagger) o [http://localhost:5252/swagger](http://localhost:5252/swagger)
+
+> [!TIP]
+> **Habilitación en Producción:**  
+> Por motivos de seguridad y rendimiento, Swagger se expone en entornos ajenos a desarrollo configurando la variable de entorno:  
+> `EnableSwagger = true` en el panel de Render.
+
+### 🔑 Cómo Autenticarse en Swagger UI:
+1. Dirígete al endpoint `POST /api/v1/auth/login` dentro de la UI de Swagger y ejecuta tu solicitud con tus credenciales.
+2. Ingresa el código OTP de 6 dígitos recibido en tu correo electrónico en `POST /api/v1/auth/verify-otp`.
+3. Copia el token de acceso (`accessToken`) de la respuesta JSON.
+4. En la parte superior derecha de la página de Swagger, haz clic en el botón verde **Authorize** 🔓.
+5. En el campo de texto, introduce:
+   ```text
+   Bearer TU_ACCESS_TOKEN_AQUI
+   ```
+6. Haz clic en **Authorize** y luego en **Close**. A partir de este momento, todos los endpoints protegidos (marcados con un candado cerrado) se ejecutarán con tu identidad de usuario autenticado.
+
+---
+
+## Arquitectura del Sistema
+
+El proyecto está diseñado bajo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y el patrón **CQRS** con **MediatR**:
+
+```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                    EnglishLearning.Client                        │
-│           Blazor WebAssembly (SPA)  — net9.0                    │
+│                    EnglishLearning.Client                       │
+│           Blazor WebAssembly (SPA) — net9.0                     │
 │  Pages: Landing · Login · Register · Dashboard · LessonsList    │
 │         LessonPlayer · Chat · Profile · Progress · Placement    │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ HTTP / JSON
 ┌───────────────────────────▼─────────────────────────────────────┐
-│                    EnglishLearning.Api                           │
-│         ASP.NET Core Web API  — net9.0                          │
+│                    EnglishLearning.Api                          │
+│         ASP.NET Core Web API — net9.0                           │
 │  Controllers: Auth · Lessons · Assessments · Users · Progress   │
 │               Chat                                              │
-│  Middleware: ExceptionHandling · CorrelationId · SecurityHeaders │
+│  Middleware: ExceptionHandling · CorrelationId · SecurityHeaders│
 │              RateLimiting                                       │
 │  Logging: Serilog  │  Auth: JWT Bearer  │  Docs: Swagger        │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ MediatR (CQRS)
 ┌───────────────────────────▼─────────────────────────────────────┐
-│                 EnglishLearning.Application                      │
-│   Features: Auth · Lessons · Assessments · Users               │
-│   FluentValidation · Mapster · Abstractions (interfaces)        │
+│                 EnglishLearning.Application                     │
+│   Features: Auth · Lessons · Assessments · Users                │
+│   FluentValidation · Mapster · Abstractions (interfaces)       │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ Domain interfaces
 ┌───────────────────────────▼─────────────────────────────────────┐
-│                   EnglishLearning.Domain                         │
+│                   EnglishLearning.Domain                        │
 │   Entities · Value Objects · Enums · Domain Events              │
-│   Domain Services: ExerciseEvaluator · LevelCalculator          │
+│   Domain Services: ExerciseEvaluator · LevelCalculator         │
 │                    RecommendationEngine · OtpService            │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ implements
 ┌───────────────────────────▼─────────────────────────────────────┐
-│               EnglishLearning.Infrastructure                     │
-│   EF Core + Npgsql (PostgreSQL / Supabase)                      │
-│   Repositories (CQRS split) · Unit of Work                      │
-│   JWT Service · BCrypt · OTP Service                            │
-│   Brevo Email API · Google Gemini AI · Polly (resilience)       │
+│               EnglishLearning.Infrastructure                    │
+│   EF Core + Npgsql (PostgreSQL / Supabase)                     │
+│   Repositories (CQRS split) · Unit of Work                     │
+│   JWT Service · BCrypt · OTP Service                           │
+│   Brevo Email API · Google Gemini AI · Polly (resilience)      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Diagrama de dependencias entre proyectos
+### Diagrama de Dependencias entre Proyectos
 
 ```mermaid
 graph TD
@@ -107,714 +155,507 @@ graph TD
 
 ---
 
-## Estructura del repositorio
+## Estructura del Repositorio
 
-```
+```text
 EnglishLearning/
-├── EnglishLearning.sln                    # Solución con 6 proyectos
-├── Dockerfile                             # Build multi-stage para producción
+├── EnglishLearning.sln                    # Solución global con 6 proyectos
+├── Dockerfile                             # Multi-stage build optimizado para producción
 ├── docker-compose.yml                     # PostgreSQL 16 + pgAdmin 4 para desarrollo local
-├── render.yaml                            # Configuración de deploy en Render.com
+├── render.yaml                            # Configuración declarativa de infraestructura en Render
 │
-├── EnglishLearning.Domain/                # Capa de dominio (sin dependencias externas)
+├── EnglishLearning.Domain/                # Capa de dominio pura (sin dependencias de infraestructura)
 │   ├── Common/                            # AggregateRoot, Entity, Result<T>, Error
-│   ├── Entities/                          # Entidades del dominio
+│   ├── Entities/                          # Entidades del modelo de negocio
 │   │   └── Entidades.cs                   # Usuario, Leccion, Ejercicio, RespuestaUsuario,
 │   │                                      # ProgresoNivel, PreguntaDiagnostica, EvaluacionDiagnostica
-│   ├── ValueObjects/
+│   ├── ValueObjects/                      # Objetos de valor inmutables
 │   │   └── ValueObjects.cs                # Email, Percentage, UserId, ExerciseId, LevelThreshold
-│   ├── Enums/
-│   │   ├── Enums.cs                       # NivelIngles, TipoEjercicio
+│   ├── Enums/                             # Enumeraciones de dominio
+│   │   ├── Enums.cs                       # NivelIngles (A1-C1), TipoEjercicio
 │   │   └── Habilidad.cs                   # Reading, Listening, Writing, Speaking
-│   ├── Events/
-│   │   └── DomainEvents.cs                # LevelChangedEvent, AssessmentCompletedEvent,
-│   │                                      # ExerciseEvaluatedEvent + dispatcher + handler interfaces
-│   ├── Interfaces/                        # ILeccionQueryRepository, ILeccionCommandRepository,
-│   │                                      # IUsuarioQueryRepository, IUsuarioCommandRepository,
-│   │                                      # IAssessmentQueryRepository, IAssessmentCommandRepository,
-│   │                                      # IRefreshTokenQueryRepository, IRefreshTokenCommandRepository
-│   ├── Options/                           # LevelCalculationOptions, AssessmentOptions,
-│   │                                      # ExerciseEvaluationOptions
-│   └── Services/                          # IExerciseEvaluator, ILevelCalculator, IRecommendationEngine,
-│                                          # IPasswordHasher, IOtpService + implementaciones de dominio
+│   ├── Events/                            # Eventos de dominio y abstracciones de despacho
+│   │   └── DomainEvents.cs                # LevelChangedEvent, AssessmentCompletedEvent, ExerciseEvaluatedEvent
+│   ├── Interfaces/                        # Contratos de repositorios segregados (Command / Query)
+│   ├── Options/                           # Opciones de configuración de evaluación y niveles
+│   └── Services/                          # Servicios de dominio: Evaluator, Calculator, Engine, Hasher, Otp
 │
-├── EnglishLearning.Application/           # Capa de aplicación (casos de uso)
-│   ├── Abstractions/                      # IJwtTokenService, IEmailService, IChatService
-│   ├── Common/                            # Behaviours de MediatR (validación, logging)
-│   ├── Dtos/                              # DTOs compartidos
-│   ├── Features/
-│   │   ├── Auth/
-│   │   │   ├── Commands/                  # LoginCommand, RegisterCommand, RefreshTokenCommand,
-│   │   │   │                              # RevokeTokenCommand, VerifyOtpCommand, ResendOtpCommand
-│   │   │   ├── DTOs/                      # AuthResponse, LoginRequest, RegisterRequest,
-│   │   │   │                              # VerifyOtpRequest, ResendOtpRequest, RefreshTokenRequest
-│   │   │   ├── Handlers/                  # Un handler por comando
-│   │   │   ├── Templates/                 # Plantillas HTML para emails OTP
-│   │   │   └── Validators/                # FluentValidation validators
-│   │   ├── Assessments/
-│   │   │   ├── Commands/                  # SubmitAssessmentCommand + Handler
-│   │   │   ├── DTOs/                      # SubmitAssessmentRequest/Response, ProgressReport
-│   │   │   ├── Queries/                   # GetAssessmentQuestionsQuery, GetProgressReportQuery
-│   │   │   └── Validators/
-│   │   ├── Lessons/
-│   │   │   ├── Commands/                  # EvaluateExerciseCommand + Handler
-│   │   │   ├── DTOs/                      # LessonDto, ExerciseDto, EvaluateExerciseRequest
-│   │   │   ├── Queries/                   # GetLessonsByLevelQuery, GetLessonByIdQuery,
-│   │   │   │                              # GetExerciseByIdQuery
-│   │   │   └── Validators/
-│   │   └── Users/
-│   │       ├── DTOs/                      # UserDto, UserProfileDto
-│   │       └── Queries/                   # GetUserByIdQuery, GetUserProfileQuery
-│   ├── Mappings/                          # Perfiles Mapster
-│   ├── Options/                           # GeminiSettings, SmtpSettings, BrevoSettings
-│   └── Services/                          # Servicios de aplicación transversales
+├── EnglishLearning.Application/           # Capa de aplicación (Casos de uso y orquestación)
+│   ├── Abstractions/                      # Interfaces transversales (IJwtTokenService, IEmailService, IChatService)
+│   ├── Common/                            # Pipeline Behaviors de MediatR (Logging, Validación)
+│   ├── Dtos/                              # DTOs compartidos de transferencia
+│   ├── Features/                          # Casos de uso organizados por módulo (Vertical Slices)
+│   │   ├── Auth/                          # Comandos, DTOs, Handlers, Templates HTML y Validadores
+│   │   ├── Assessments/                   # Preguntas diagnósticas, envío de test y reportes
+│   │   ├── Lessons/                       # Listado por nivel, consulta de ejercicios y evaluación
+│   │   └── Users/                         # Consulta de perfiles y estados de usuario
+│   ├── Mappings/                          # Configuraciones de mapeo con Mapster
+│   └── Options/                           # Clases fuertemente tipadas de configuración (Gemini, Brevo, JWT)
 │
-├── EnglishLearning.Infrastructure/        # Capa de infraestructura (acceso a datos y externos)
-│   ├── AI/
-│   │   └── GeminiChatService.cs           # Cliente HTTP para Google Gemini API
-│   ├── Events/
-│   │   └── DomainEventDispatcher.cs       # Despacho de domain events
-│   ├── Messaging/
-│   │   └── BrevoEmailService.cs           # Cliente HTTP para Brevo Email API
-│   ├── Migrations/
-│   │   ├── 20261004224805_InitialCreate   # Esquema inicial: usuarios, lecciones, ejercicios, respuestas, progreso
-│   │   └── 20261004233343_AddAuthTables   # Tablas de auth: refresh tokens, evaluaciones, preguntas diagnósticas
-│   ├── Persistence/
-│   │   └── EnglishLearningDbContext.cs    # DbContext EF Core con todas las configuraciones de entidades
-│   ├── Repositories/
-│   │   ├── Assessments/                   # AssessmentQueryRepository, AssessmentCommandRepository
-│   │   ├── Auth/                          # RefreshTokenQueryRepository, RefreshTokenCommandRepository
-│   │   ├── Lessons/                       # LeccionQueryRepository, LeccionCommandRepository
-│   │   └── Users/                         # UsuarioQueryRepository, UsuarioCommandRepository
-│   ├── Seed/
-│   │   └── Data/                          # Archivos JSON de seed (lecciones, ejercicios, preguntas)
-│   ├── Services/
-│   │   ├── JwtTokenService.cs             # Generación/validación de JWT + Refresh Token
-│   │   ├── OtpService.cs                  # Generación y verificación de códigos OTP
-│   │   ├── PasswordHasher.cs              # BCrypt wrapper
-│   │   └── SeedDataService.cs             # Servicio de carga de datos iniciales
-│   ├── UnitOfWork/
-│   │   └── UnitOfWork.cs                  # Patrón Unit of Work sobre DbContext
-│   └── ServiceCollectionExtensions.cs     # Registro de todos los servicios de infraestructura
+├── EnglishLearning.Infrastructure/        # Implementación técnica y servicios externos
+│   ├── AI/                                # Cliente Google Gemini con Polly y auto-descubrimiento de modelos
+│   ├── Events/                            # Implementación en memoria del despachador de eventos de dominio
+│   ├── Messaging/                         # Cliente HTTP Brevo REST API para emails transaccionales
+│   ├── Migrations/                        # Historial de migraciones de Entity Framework Core
+│   ├── Persistence/                       # DbContext, mapeos Fluent API e índices
+│   ├── Repositories/                      # Implementaciones concretas de repositorios Command y Query
+│   ├── Seed/Data/                         # Archivos JSON con preguntas diagnósticas y lecciones de ejemplo
+│   ├── Services/                          # Implementaciones de JWT, OTP en memoria, BCrypt y Seeding
+│   └── UnitOfWork/                        # Abstracción transaccional sobre EF Core
 │
-├── EnglishLearning.Api/                   # Capa de presentación (API + host Blazor)
-│   ├── Controllers/v1/
-│   │   ├── AuthController.cs              # /api/v1/auth
-│   │   ├── LessonsController.cs           # /api/v1/lessons
-│   │   ├── AssessmentsController.cs       # /api/v1/assessments
-│   │   ├── UsersController.cs             # /api/v1/users
-│   │   ├── ProgressController.cs          # /api/v1/progress
-│   │   └── ChatController.cs              # /api/v1/chat
-│   ├── Extensions/
-│   │   ├── ServiceCollectionExtensions.cs # JWT, CORS, Swagger, RateLimit, HealthChecks
-│   │   ├── MiddlewareExtensions.cs        # Pipeline de middleware personalizado
-│   │   └── SwaggerExtensions.cs           # Configuración Swagger UI
-│   ├── Filters/
-│   │   └── ApiFilters.cs                  # ValidationFilter + ApiResponseEnvelopeFilter
-│   ├── Middleware/
-│   │   ├── CorrelationIdMiddleware.cs     # Agrega X-Correlation-Id a cada request
-│   │   ├── ExceptionHandlingMiddleware.cs # Manejo centralizado de excepciones → JSON estructurado
-│   │   ├── RateLimitingMiddleware.cs      # Integración AspNetCoreRateLimit
-│   │   └── SecurityHeadersMiddleware.cs   # Cabeceras de seguridad HTTP
-│   ├── Program.cs                         # Entry point: Serilog, middleware pipeline,
-│   │                                      # Blazor WASM hosting, auto-migrate + seed
-│   └── appsettings.json                   # Configuración completa (ver sección de configuración)
+├── EnglishLearning.Api/                   # Host principal (Web API + Static Host para Blazor WASM)
+│   ├── Controllers/v1/                    # Controladores REST: Auth, Lessons, Assessments, Users, Progress, Chat
+│   ├── Extensions/                        # Métodos de extensión para DI, Swagger, CORS y HealthChecks
+│   ├── Filters/                           # Filtros globales de validación y envoltura de respuesta estándar
+│   ├── Middleware/                        # Manejo de excepciones, CorrelationId, RateLimit y SecurityHeaders
+│   ├── Program.cs                         # Configuración del pipeline HTTP, auto-migración y bootstrap
+│   └── appsettings.json                   # Configuración del sistema
 │
-├── EnglishLearning.Client/                # Frontend Blazor WebAssembly
-│   ├── Pages/
-│   │   ├── Landing.razor                  # Página de inicio pública
-│   │   ├── Login.razor                    # Formulario de login
-│   │   ├── Register.razor                 # Formulario de registro
-│   │   ├── Dashboard.razor                # Panel principal del usuario
-│   │   ├── LessonsList.razor              # Catálogo de lecciones por nivel
-│   │   ├── LessonPlayer.razor             # Reproductor de lección con ejercicios
-│   │   ├── Chat.razor                     # Chat con tutor de IA (Gemini)
-│   │   ├── Profile.razor                  # Perfil del usuario
-│   │   ├── Progress.razor                 # Reporte de progreso
-│   │   └── Placement/                     # Flujo de evaluación diagnóstica
-│   ├── Components/
-│   │   ├── Guards/                        # Route guards de autenticación
-│   │   └── UI/                            # Componentes UI reutilizables
-│   ├── Services/
-│   │   ├── Api/                           # ApiClient (HttpClient tipado)
-│   │   ├── Auth/                          # JwtAuthStateProvider, TokenStore, AuthHeaderHandler
-│   │   ├── AssessmentService.cs           # Servicio para evaluaciones diagnósticas
-│   │   ├── LessonService.cs               # Servicio para lecciones y ejercicios
-│   │   ├── ChatService.cs                 # Servicio para el chat con tutor IA
-│   │   ├── ProgressService.cs             # Servicio para reporte de progreso
-│   │   ├── UserSession.cs                 # Estado global del usuario en sesión
-│   │   └── ToastService.cs                # Notificaciones toast UI
-│   ├── Layout/                            # MainLayout, NavMenu, etc.
-│   ├── Models/                            # Modelos de UI del cliente
-│   └── Program.cs                         # Bootstrap WASM: DI, HttpClients, Auth
+├── EnglishLearning.Client/                # Aplicación Frontend Blazor WebAssembly (SPA)
+│   ├── Pages/                             # Vistas de la aplicación: Landing, Login, Register, Dashboard, etc.
+│   ├── Components/                        # Componentes UI reutilizables y Route Guards de autenticación
+│   ├── Services/                          # Servicios de cliente: ApiClient, AuthStateProvider, Toast, Sesión
+│   └── Layout/                            # Estructura visual de navegación y componentes compartidos
 │
-└── EnglishLearning.Tests/                 # Tests unitarios
-    ├── Auth/                              # Tests de handlers de autenticación
-    ├── Events/                            # Tests de domain events
-    ├── Services/                          # Tests de servicios de dominio
-    └── Fakes/                             # Implementaciones fake de repositorios e interfaces
+└── EnglishLearning.Tests/                 # Suite de pruebas automatizadas (xUnit + Moq + Coverlet)
+    ├── Auth/                              # Pruebas unitarias de autenticación y verificación OTP
+    ├── Events/                            # Pruebas de emisión y captura de Domain Events
+    ├── Services/                          # Pruebas de lógica de cálculo de nivel y evaluación
+    └── Fakes/                             # Repositorios y servicios simulados en memoria
 ```
 
 ---
 
-## Stack tecnológico
+## Stack Tecnológico
 
 ### Backend
-
-| Tecnología | Versión | Uso |
-|---|---|---|
-| .NET / ASP.NET Core | 9.0 | Framework base del servidor |
-| Entity Framework Core | 9.0.0 | ORM para acceso a datos |
-| Npgsql.EFCore.PostgreSQL | 9.0.0 | Proveedor EF Core para PostgreSQL |
-| MediatR | 12.4.1 | Implementación CQRS (Commands/Queries) |
-| FluentValidation | 11.9.2 | Validación de comandos y requests |
-| Mapster | 7.4.0 | Mapeo entre entidades y DTOs |
-| BCrypt.Net-Next | 4.0.3 | Hash de contraseñas |
-| System.IdentityModel.Tokens.Jwt | 8.0.0 | Generación y validación de JWT |
-| Serilog | 8.0.0 | Logging estructurado |
-| AspNetCoreRateLimit | 5.0.0 | Rate limiting por IP |
-| Polly | 8.8.0 | Resilience / retry policies |
-| Swashbuckle.AspNetCore | 6.5.0 | Swagger / OpenAPI |
-| MailKit | 4.18.1 | Cliente SMTP (fallback email) |
-| AspNetCore.HealthChecks.NpgSql | 9.0.0 | Health check de PostgreSQL |
+| Tecnología | Versión | Propósito |
+| :--- | :--- | :--- |
+| **.NET / ASP.NET Core** | 9.0 | Runtime y framework base del servidor |
+| **Entity Framework Core** | 9.0.0 | ORM de acceso a base de datos relacional |
+| **Npgsql.EFCore.PostgreSQL** | 9.0.0 | Driver y proveedor para PostgreSQL |
+| **MediatR** | 12.4.1 | Desacoplamiento de casos de uso mediante CQRS |
+| **FluentValidation** | 11.9.2 | Validación declarativa de comandos y contratos |
+| **Mapster** | 7.4.0 | Mapeo rápido de alto rendimiento de objetos |
+| **BCrypt.Net-Next** | 4.0.3 | Algoritmo de derivación y hash de contraseñas |
+| **System.IdentityModel.Tokens.Jwt** | 8.0.0 | Creación, firma y validación de tokens JWT |
+| **Serilog** | 8.0.0 | Registro de logs estructurado con trazabilidad |
+| **AspNetCoreRateLimit** | 5.0.0 | Control de cuota y mitigación de abuso por IP |
+| **Polly** | 8.8.0 | Políticas de resiliencia, reintentos exponenciales y fallback |
+| **Swashbuckle.AspNetCore** | 6.5.0 | Generación de especificación OpenAPI y Swagger UI |
+| **AspNetCore.HealthChecks.NpgSql**| 9.0.0 | Monitoreo activo de conectividad con la base de datos |
 
 ### Frontend
+| Tecnología | Versión | Propósito |
+| :--- | :--- | :--- |
+| **Blazor WebAssembly** | 9.0.0 | Framework SPA interactivo en C# cliente ejecutado en WebAssembly |
+| **Microsoft.AspNetCore.Components.Authorization** | 9.0.0 | Gestión del estado de autenticación y directivas de seguridad en vistas |
+| **System.IdentityModel.Tokens.Jwt** | 8.1.2 | Decodificación y lectura de claims JWT en el navegador |
+| **Web Speech API** | Nativa | Síntesis de voz (*SpeechSynthesis*) para pronunciación del tutor |
 
-| Tecnología | Versión | Uso |
-|---|---|---|
-| Blazor WebAssembly | 9.0.0 | Framework SPA frontend |
-| Microsoft.AspNetCore.Components.Authorization | 9.0.0 | Autenticación en el cliente |
-| System.IdentityModel.Tokens.Jwt | 8.1.2 | Parsing de JWT en el cliente |
-| Microsoft.Extensions.Http | 9.0.0 | HttpClient factory |
-| Web Speech API | — | Text-to-speech en el chat del tutor |
-
-### Servicios externos
-
-| Servicio | Uso |
-|---|---|
-| PostgreSQL 16 | Base de datos principal |
-| Supabase | Alternativa hosted de PostgreSQL (producción) |
-| Google Gemini AI | Motor del tutor de IA (`gemini-3.8-flash` / fallback `gemini-3.5-flash-lite`) |
-| Brevo (ex Sendinblue) | Envío de emails OTP para verificación de cuenta |
-| Render.com | Plataforma de deploy (Docker, free tier, región Oregon) |
+### Servicios de Infraestructura en la Nube
+| Servicio | Rol en el Sistema |
+| :--- | :--- |
+| **PostgreSQL 16 / Supabase** | Base de datos relacional persistente con SSL y pooler transaccional |
+| **Google Gemini AI Studio** | Modelo fundacional para el tutor de inglés (`gemini-3.8-flash`) |
+| **Brevo API (v3)** | Pasarela de correo transaccional vía HTTPS (puerto 443) para OTP |
+| **Render.com** | Plataforma de alojamiento cloud con despliegue de contenedores Docker |
 
 ---
 
-## Dominio y modelo de datos
+## Dominio y Modelo de Datos
 
-### Entidades
+### Entidades Principales
 
-#### `Usuario` (AggregateRoot)
-| Propiedad | Tipo | Descripción |
-|---|---|---|
-| `Id` | `int` | Identificador único |
-| `Nombre` | `string` | Nombre del usuario |
-| `Correo` | `string` | Email único (normalizado a minúsculas) |
-| `PasswordHash` | `string` | Hash BCrypt de la contraseña |
-| `NivelActual` | `NivelIngles` | Nivel CEFR asignado actualmente |
-| `RefreshToken` | `string?` | Token de renovación activo |
-| `RefreshTokenExpiry` | `DateTime?` | Fecha de expiración del refresh token |
-| `Progresos` | `IReadOnlyList<ProgresoNivel>` | Historial de progreso por nivel |
+#### 👤 Usuario (`AggregateRoot`)
+Representa a un estudiante registrado en la plataforma.
+* `Id` (`int`): Identificador único secuencial.
+* `Nombre` (`string`): Nombre completo del estudiante.
+* `Correo` (`string`): Correo normalizado único.
+* `PasswordHash` (`string`): Hash criptográfico seguro generado con BCrypt.
+* `NivelActual` (`NivelIngles`): Nivel CEFR asignado (`SinAsignar`, `A1`, `A2`, `B1`, `B2`, `C1`).
+* `RefreshToken` (`string?`): Token de renovación criptográfico.
+* `RefreshTokenExpiry` (`DateTime?`): Fecha límite de vigencia del Refresh Token.
+* `Progresos` (`IReadOnlyList<ProgresoNivel>`): Colección de progresos por nivel completado.
+* **Domain Events Emitidos**: `LevelChangedEvent`.
 
-**Domain events que emite:** `LevelChangedEvent`
+#### 📖 Leccion (`AggregateRoot`)
+Unidad pedagógica que contiene un conjunto de ejercicios prácticos.
+* `Id` (`int`): Identificador único.
+* `Titulo` (`string`): Título representativo de la lección.
+* `Descripcion` (`string`): Objetivos pedagógicos de la lección.
+* `NivelRequerido` (`NivelIngles`): Nivel CEFR mínimo requerido para desbloquearla.
+* `Ejercicios` (`IReadOnlyList<Ejercicio>`): Lista de ejercicios pertenecientes a la lección.
 
-#### `Leccion` (AggregateRoot)
-| Propiedad | Tipo | Descripción |
-|---|---|---|
-| `Id` | `int` | Identificador único |
-| `Titulo` | `string` | Título de la lección (max 200 chars) |
-| `Descripcion` | `string` | Descripción de la lección |
-| `NivelRequerido` | `NivelIngles` | Nivel mínimo para acceder |
-| `Ejercicios` | `IReadOnlyList<Ejercicio>` | Ejercicios de la lección |
+#### ✍️ Ejercicio (`Entity`)
+* `Id` (`int`): Identificador único.
+* `LeccionId` (`int`): Clave foránea a la lección padre.
+* `Contenido` (`string`): Enunciado o consigna a resolver.
+* `RespuestaCorrecta` (`string`): Solución esperada.
+* `Tipo` (`TipoEjercicio`): `Lectura`, `Escucha`, `Escritura`, `OpcionMultiple`.
 
-#### `Ejercicio` (Entity)
-| Propiedad | Tipo | Descripción |
-|---|---|---|
-| `Id` | `int` | Identificador único |
-| `LeccionId` | `int` | FK a Leccion |
-| `Contenido` | `string` | Enunciado / contenido del ejercicio |
-| `RespuestaCorrecta` | `string` | Respuesta esperada |
-| `Tipo` | `TipoEjercicio` | Tipo del ejercicio |
+#### 📝 EvaluacionDiagnostica (`Entity`)
+Almacena el resultado histórico del test de posicionamiento inicial: nivel asignado, puntaje global alcanzado y desglose porcentual por habilidad en formato JSON.
 
-#### `RespuestaUsuario` (Entity)
-Registra cada respuesta enviada por el usuario a un ejercicio o pregunta diagnóstica.
+---
 
-#### `ProgresoNivel` (Entity)
-Almacena el porcentaje completado por el usuario en cada nivel CEFR.
+## API — Catálogo Completo de Endpoints
 
-#### `PreguntaDiagnostica` (Entity)
-Preguntas del test de posicionamiento inicial. Tienen asociada una `Habilidad` (Reading/Listening/Writing/Speaking) y una `RespuestaCorrecta`.
+Todos los endpoints están prefijados bajo `/api/v1/`. Los endpoints señalados con 🔒 requieren la cabecera `Authorization: Bearer <accessToken>`.
 
-#### `EvaluacionDiagnostica` (Entity)
-Resultado de un test diagnóstico: nivel asignado, puntaje total y desglose por habilidad en JSON.
-
-### Value Objects
-
-| Value Object | Validaciones |
-|---|---|
-| `Email` | No vacío, contiene `@` y `.`, máximo 150 chars, normalizado a minúsculas |
-| `Percentage` | Valor entre 0.0 y 100.0, redondeado a 1 decimal |
-| `UserId` | Entero mayor a 0 |
-| `ExerciseId` | Entero mayor a 0 |
-| `LevelThreshold` | Nombre no vacío, porcentaje entre 0 y 100 |
-
-### Enumeraciones
-
-```csharp
-// Niveles CEFR
-public enum NivelIngles { SinAsignar = 0, A1 = 1, A2 = 2, B1 = 3, B2 = 4, C1 = 5 }
-
-// Tipos de ejercicio
-public enum TipoEjercicio { Lectura, Escucha, Escritura, OpcionMultiple }
-
-// Habilidades del idioma
-public enum Habilidad { Reading = 1, Listening = 2, Writing = 3, Speaking = 4 }
+```mermaid
+graph LR
+    Client([Cliente / Swagger]) -->|HTTP Request| API[EnglishLearning.Api]
+    API --> Auth[/api/v1/auth]
+    API --> Lessons[/api/v1/lessons]
+    API --> Assess[/api/v1/assessments]
+    API --> Users[/api/v1/users]
+    API --> Progress[/api/v1/progress]
+    API --> Chat[/api/v1/chat]
+    API --> Health[/health]
+    API --> SwaggerDoc[/swagger]
 ```
 
-### Domain Events
+### 1. Autenticación — `/api/v1/auth`
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `POST` | `/api/v1/auth/register` | ❌ | Registra un usuario y envía el código OTP de verificación por correo. |
+| `POST` | `/api/v1/auth/login` | ❌ | Valida credenciales, genera OTP y solicita verificación de 6 dígitos. |
+| `POST` | `/api/v1/auth/verify-otp` | ❌ | Valida el código OTP y entrega los tokens JWT (`accessToken` + `refreshToken`). |
+| `POST` | `/api/v1/auth/resend-otp` | ❌ | Genera y reenvía un nuevo código OTP al correo del usuario. |
+| `POST` | `/api/v1/auth/refresh` | ❌ | Rota y renueva el Access Token expirado usando un Refresh Token válido. |
+| `POST` | `/api/v1/auth/revoke` | ❌ | Invalida el Refresh Token actual, cerrando la sesión de manera segura. |
+| `GET` | `/api/v1/auth/me` | 🔒 | Obtiene la información básica del usuario en sesión. |
 
-| Evento | Datos | Disparado cuando |
-|---|---|---|
-| `LevelChangedEvent` | `UserId`, `PreviousLevel`, `NewLevel`, `AchievementPercentage` | El nivel del usuario cambia |
-| `AssessmentCompletedEvent` | `UserId`, `AssignedLevel`, `TotalQuestions`, `CorrectAnswers`, scores por habilidad | Se completa una evaluación diagnóstica |
-| `ExerciseEvaluatedEvent` | `UserId`, `ExerciseId`, `IsCorrect`, `UserLevel`, `ResponseTime` | Se evalúa una respuesta a un ejercicio |
+### 2. Lecciones y Ejercicios — `/api/v1/lessons`
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/v1/lessons/by-level/{nivel}` | 🔒 | Obtiene las lecciones disponibles para un nivel CEFR (ej. `A1`, `B1`). |
+| `GET` | `/api/v1/lessons/{id}` | 🔒 | Obtiene el detalle de una lección específica incluyendo sus ejercicios. |
+| `GET` | `/api/v1/lessons/exercises/{id}` | 🔒 | Obtiene los datos de un ejercicio individual por su ID. |
+| `POST` | `/api/v1/lessons/evaluate` | 🔒 | Envía y evalúa la respuesta dada por el estudiante a un ejercicio. |
 
----
+### 3. Evaluación Diagnóstica — `/api/v1/assessments`
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/v1/assessments/questions` | 🔒 | Descarga las preguntas del test diagnóstico inicial (4 habilidades). |
+| `POST` | `/api/v1/assessments/submit` | 🔒 | Envía las respuestas del test, calcula y actualiza el nivel del usuario. |
+| `GET` | `/api/v1/assessments/progress` | 🔒 | Consulta el reporte de evolución diagnóstica del estudiante. |
 
-## API — Endpoints
+### 4. Tutor de Inteligencia Artificial — `/api/v1/chat`
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `POST` | `/api/v1/chat/ask` | 🔒 | Envía una consulta al tutor IA adaptada al nivel del estudiante y recibe respuesta pedagógica. |
 
-Todos los endpoints están bajo el prefijo `/api/v1/`. Los marcados con 🔒 requieren JWT Bearer en el header `Authorization: Bearer <token>`.
+### 5. Usuarios y Progreso — `/api/v1/users` y `/api/v1/progress`
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/v1/users/me` | 🔒 | Datos generales del estudiante autenticado. |
+| `GET` | `/api/v1/users/profile` | 🔒 | Perfil completo con estadísticas agregadas de respuestas y nivel. |
+| `GET` | `/api/v1/progress` | 🔒 | Resumen cuantitativo del progreso global y lecciones aprobadas. |
 
-### Auth — `/api/v1/auth`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | ❌ | Registra un nuevo usuario. Envía OTP por email. |
-| `POST` | `/api/v1/auth/login` | ❌ | Autentica con email/password. Devuelve access + refresh token. |
-| `POST` | `/api/v1/auth/verify-otp` | ❌ | Verifica el código OTP recibido por email. |
-| `POST` | `/api/v1/auth/resend-otp` | ❌ | Reenvía el código OTP. |
-| `POST` | `/api/v1/auth/refresh` | ❌ | Renueva el access token usando el refresh token. |
-| `POST` | `/api/v1/auth/revoke` | ❌ | Revoca el refresh token activo. |
-| `GET` | `/api/v1/auth/me` | 🔒 | Devuelve el perfil del usuario autenticado. |
-
-### Lecciones — `/api/v1/lessons`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/v1/lessons/by-level/{nivel}` | 🔒 | Lista lecciones filtradas por nivel CEFR. |
-| `GET` | `/api/v1/lessons/{id}` | 🔒 | Obtiene una lección por ID con sus ejercicios. |
-| `GET` | `/api/v1/lessons/exercises/{id}` | 🔒 | Obtiene un ejercicio específico por ID. |
-| `POST` | `/api/v1/lessons/evaluate` | 🔒 | Evalúa la respuesta del usuario a un ejercicio. |
-
-### Evaluaciones — `/api/v1/assessments`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/v1/assessments/questions` | 🔒 | Obtiene las preguntas del test diagnóstico. |
-| `POST` | `/api/v1/assessments/submit` | 🔒 | Envía respuestas, calcula nivel, guarda evaluación. |
-| `GET` | `/api/v1/assessments/progress` | 🔒 | Obtiene el reporte de progreso del usuario. |
-
-### Usuarios — `/api/v1/users`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/v1/users/me` | 🔒 | Datos del usuario autenticado. |
-| `GET` | `/api/v1/users/profile` | 🔒 | Perfil completo del usuario autenticado. |
-
-### Progreso — `/api/v1/progress`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `GET` | `/api/v1/progress` | 🔒 | Reporte de progreso del usuario autenticado. |
-
-### Chat — `/api/v1/chat`
-
-| Método | Endpoint | Auth | Descripción |
-|---|---|---|---|
-| `POST` | `/api/v1/chat/ask` | 🔒 | Envía un mensaje al tutor de IA (Gemini). |
-
-### Otros
-
-| Endpoint | Descripción |
-|---|---|
-| `GET /health` | Health check del servidor y base de datos. |
-| `GET /swagger` | Documentación interactiva (habilitado en Development y cuando `EnableSwagger=true`). |
+### 6. Diagnóstico y Documentación
+| Método | Ruta | Auth | Descripción |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/health` | ❌ | Comprobación de estado del servicio y conectividad activa a PostgreSQL. |
+| `GET` | `/swagger` | ❌ | Interfaz gráfica interactiva de documentación OpenAPI. |
 
 ---
 
-## Flujo de autenticación
+## Flujo de Autenticación y Seguridad OTP
 
-La plataforma implementa autenticación en dos fases con JWT + OTP.
+El sistema implementa autenticación reforzada en dos fases con verificación de canal externo vía OTP por correo electrónico:
 
-```
-┌──────────┐        ┌──────────────┐       ┌───────────────┐       ┌──────────┐
-│  Cliente │        │   API /auth  │       │  Base de datos│       │  Brevo   │
-└────┬─────┘        └──────┬───────┘       └──────┬────────┘       └────┬─────┘
-     │                     │                       │                      │
-     │  POST /register     │                       │                      │
-     │────────────────────>│                       │                      │
-     │                     │  Crea usuario (hash   │                      │
-     │                     │  BCrypt), guarda OTP  │                      │
-     │                     │──────────────────────>│                      │
-     │                     │                       │                      │
-     │                     │  Envía email OTP      │                      │
-     │                     │─────────────────────────────────────────────>│
-     │  { requiresOtp: true}│                      │                      │
-     │<────────────────────│                       │                      │
-     │                     │                       │                      │
-     │  POST /verify-otp   │                       │                      │
-     │────────────────────>│  Valida código OTP    │                      │
-     │                     │──────────────────────>│                      │
-     │  { accessToken,     │                       │                      │
-     │    refreshToken }   │                       │                      │
-     │<────────────────────│                       │                      │
-     │                     │                       │                      │
-     │  [requests con JWT] │                       │                      │
-     │────────────────────>│                       │                      │
-     │                     │                       │                      │
-     │  POST /refresh      │                       │                      │
-     │  (cuando expira)    │  Rota refresh token   │                      │
-     │────────────────────>│──────────────────────>│                      │
-     │  { nuevo JWT }      │                       │                      │
-     │<────────────────────│                       │                      │
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Estudiante as Estudiante
+    participant UI as Blazor WASM
+    participant API as EnglishLearning.Api
+    participant DB as PostgreSQL
+    participant Brevo as Brevo API (HTTPS)
+
+    Estudiante->>UI: Ingresa Email y Contraseña
+    UI->>API: POST /api/v1/auth/login
+    API->>DB: Verifica usuario y hash BCrypt
+    API->>API: Genera código OTP aleatorio de 6 dígitos
+    API->>Brevo: POST https://api.brevo.com/v3/smtp/email
+    Brevo-->>Estudiante: Entrega correo con código OTP
+    API-->>UI: Responde { requiresOtp: true }
+    UI->>Estudiante: Muestra formulario de verificación OTP
+    Estudiante->>UI: Digita código de 6 dígitos
+    UI->>API: POST /api/v1/auth/verify-otp
+    API->>API: Valida código en memoria con expiración de 5m
+    API->>DB: Almacena Refresh Token firmado
+    API-->>UI: Devuelve Access Token (JWT) + Refresh Token
+    UI->>UI: Almacena credenciales e inicializa sesión
 ```
 
-**Parámetros del token:**
+---
 
-| Parámetro | Valor |
-|---|---|
-| Algoritmo | HMAC-SHA256 (`SymmetricSecurityKey`) |
-| Issuer | `EnglishLearning.Api` |
-| Audience | `EnglishLearning.Client` |
-| Access Token TTL | **15 minutos** |
-| Refresh Token TTL | **7 días** |
-| Clock Skew | **0** (sin margen de tolerancia) |
+## Sistema de Niveles CEFR y Evaluación
 
-El cliente Blazor almacena los tokens vía `TokenStore`, usa `JwtAuthStateProvider` para exponer `AuthenticationState`, y `AuthHeaderHandler` como `DelegatingHandler` para adjuntar automáticamente el JWT en cada request HTTP.
+El cálculo de nivel se fundamenta en el **Marco Común Europeo de Referencia para las Lenguas (CEFR)**.
+
+### Umbrales del Test Diagnóstico
+| Nivel | Rango de Aciertos | Competencia Lingüística |
+| :---: | :---: | :--- |
+| **A1** | `0% - 25%` | Acceso / Principiante: Comprensión de expresiones cotidianas muy básicas. |
+| **A2** | `26% - 45%` | Plataforma / Elemental: Comunicación en tareas sencillas y habituales. |
+| **B1** | `46% - 65%` | Umbral / Intermedio: Comprensión de puntos principales en contextos conocidos. |
+| **B2** | `66% - 85%` | Avanzado / Intermedio Alto: Fluidez con nativos y comprensión de textos complejos. |
+| **C1** | `86% - 100%` | Dominio Operativo Eficaz: Uso flexible y estructurado del idioma en cualquier ámbito. |
 
 ---
 
-## Sistema de niveles CEFR
+## Tutor de Inteligencia Artificial (Google Gemini)
 
-La plataforma usa el estándar CEFR (Marco Europeo de Referencia para las Lenguas). Los umbrales de nivel son configurables en `appsettings.json` sin necesidad de recompilar.
-
-### Umbrales de asignación (puntaje del test diagnóstico)
-
-| Nivel | Puntaje mínimo | Descripción |
-|---|---|---|
-| `A1` | 0% | Principiante absoluto |
-| `A2` | 26% | Principiante elemental |
-| `B1` | 46% | Intermedio bajo |
-| `B2` | 66% | Intermedio alto |
-| `C1` | 86% | Avanzado |
-
-### Reglas de promoción automática
-
-Configuradas bajo `LevelCalculation.PromotionRules`:
-
-| Regla | Valor por defecto |
-|---|---|
-| Porcentaje mínimo de respuestas correctas | 80% |
-| Mínimo de respuestas totales requeridas | 10 |
-| Nivel máximo alcanzable | C1 |
-
-### Estrategias de evaluación de ejercicios
-
-Configuradas bajo `ExerciseEvaluation` y aplicadas por el `IExerciseEvaluator`:
-
-| Estrategia | Descripción |
-|---|---|
-| `CaseInsensitiveExact` | Comparación exacta ignorando mayúsculas/minúsculas (default) |
-| `Fuzzy` | Similitud con umbral configurable (default 0.85) |
-| `Regex` | Evaluación por expresión regular |
-
-### Motor de recomendaciones
-
-El `IRecommendationEngine` genera una recomendación personalizada después de cada evaluación, analizando el nivel asignado y los puntajes por habilidad (Reading, Listening, Writing, Speaking) para sugerir en qué área enfocarse.
+El servicio `GeminiChatService` actúa como un tutor pedagógico personalizado:
+* **Modelo Primario**: `gemini-3.8-flash` (alta velocidad y razonamiento avanzado).
+* **Modelo Fallback (Respaldo)**: `gemini-3.5-flash-lite` con cuota de **500 peticiones diarias gratuitas**. Si se alcanza el límite del modelo primario (HTTP 429), el pipeline de resiliencia con **Polly** conmuta automáticamente sin interrumpir al usuario.
+* **Auto-Descubrimiento Dinámico**: En caso de un código `404 Not Found` por obsolescencia de versiones en la API de Google, el servicio consulta la lista de modelos de la cuenta y selecciona de forma autónoma el mejor modelo disponible.
+* **Instrucción de Sistema Pedagógica**: Configurado para motivar, corregir con explicaciones claras, sugerir estructuras naturales y mantenerse enfocado en el aprendizaje del idioma.
 
 ---
 
-## Servicios externos
+## Servicio de Mensajería Transaccional (Brevo API)
 
-### Google Gemini AI (Tutor de IA)
-
-El `GeminiChatService` implementa `IChatService` y se comunica con la API de Gemini vía HTTP. Está registrado con `AddHttpClient<>` para utilizar el pool de conexiones.
-
-| Configuración | Valor por defecto |
-|---|---|
-| Modelo principal | `gemini-3.8-flash` |
-| Modelo fallback | `gemini-3.5-flash-lite` |
-| Timeout | 25 segundos |
-
-### Brevo Email API (OTP y notificaciones)
-
-El `BrevoEmailService` implementa `IEmailService` y envía emails transaccionales usando la API REST de Brevo. Se usa para el envío de códigos OTP durante el registro y verificación de cuenta.
-
-| Configuración | Descripción |
-|---|---|
-| `Brevo:ApiKey` | Clave de API de Brevo |
-| `Brevo:FromEmail` | Dirección de envío |
-| `Brevo:FromName` | Nombre del remitente |
+Para resolver el bloqueo común de puertos SMTP (`25`, `465`, `587`) que aplican los proveedores de hosting en la nube como Render (Free Tier), el servicio de correo fue migrado a la **API REST de Brevo** mediante solicitudes HTTPS sobre el **puerto 443**:
+* **Endpoint utilizado**: `POST https://api.brevo.com/v3/smtp/email`
+* **Autenticación**: Cabecera `api-key: xkeysib-...`
+* **Seguridad de IPs en Brevo**: Para permitir llamadas desde servidores cloud con IPs dinámicas como Render, se debe mantener desactivado el bloqueo estricto de IPs en:  
+  👉 [https://app.brevo.com/security/authorised_ips](https://app.brevo.com/security/authorised_ips) (*Desactivar para claves API*).
 
 ---
 
-## Setup local
+## Ejemplos Prácticos de Consumo (cURL)
+
+### 1. Comprobar Salud del Servidor
+```bash
+curl -X GET "https://englishlearning-mum4.onrender.com/health"
+```
+
+### 2. Iniciar Sesión (Solicitar OTP)
+```bash
+curl -X POST "https://englishlearning-mum4.onrender.com/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "estudiante@ejemplo.com",
+    "password": "Password123!"
+  }'
+```
+
+### 3. Verificar Código OTP
+```bash
+curl -X POST "https://englishlearning-mum4.onrender.com/api/v1/auth/verify-otp" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "estudiante@ejemplo.com",
+    "otp": "123456"
+  }'
+```
+
+### 4. Consultar al Tutor de IA
+```bash
+curl -X POST "https://englishlearning-mum4.onrender.com/api/v1/chat/ask" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_TOKEN_JWT" \
+  -d '{
+    "message": "Can you explain the difference between 'make' and 'do' with examples?"
+  }'
+```
+
+---
+
+## Setup Local
 
 ### Prerrequisitos
+* [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9)
+* [PostgreSQL 16+](https://www.postgresql.org/download/) o Docker Desktop
+* API Key de [Google AI Studio](https://aistudio.google.com/apikey)
+* API Key de [Brevo](https://www.brevo.com/)
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9)
-- [PostgreSQL 16+](https://www.postgresql.org/download/) o [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- Una API Key de [Google Gemini](https://aistudio.google.com/app/apikey) (opcional, para el chat)
-- Una API Key de [Brevo](https://www.brevo.com/) (opcional, para emails OTP)
-
-### 1. Clonar el repositorio
-
+### 1. Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/EnglishLearning.git
+git clone https://github.com/Leonme21/EnglishLearning.git
 cd EnglishLearning
 ```
 
-### 2. Configurar los secretos
-
-Edita `EnglishLearning.Api/appsettings.Development.json` (o usa User Secrets):
-
+### 2. Configurar Secretos Locales
+Edita `EnglishLearning.Api/appsettings.Development.json`:
 ```json
 {
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost;Database=englishlearning;Username=postgres;Password=TU_PASSWORD;Port=5432"
   },
   "Jwt": {
-    "SecretKey": "una-clave-secreta-muy-larga-de-al-menos-32-caracteres"
+    "SecretKey": "SuperClaveSecretaParaDesarrolloLocalDeAlMenos32Caracteres!#"
   },
   "Gemini": {
-    "ApiKey": "TU_GEMINI_API_KEY"
+    "ApiKey": "TU_GOOGLE_AI_STUDIO_API_KEY",
+    "Model": "gemini-3.8-flash",
+    "FallbackModel": "gemini-3.5-flash-lite"
   },
   "Brevo": {
-    "ApiKey": "TU_BREVO_API_KEY",
-    "FromEmail": "tu@email.com",
-    "FromName": "English Learning"
+    "ApiKey": "TU_BREVO_API_KEY_xkeysib-...",
+    "FromEmail": "tu_correo_verificado@gmail.com",
+    "FromName": "English Learning Platform"
   }
 }
 ```
 
-### 3. Aplicar migraciones y correr
-
-La aplicación aplica las migraciones y carga el seed automáticamente al iniciar (`Program.cs`). Solo necesitas que PostgreSQL esté corriendo:
-
+### 3. Ejecutar la Aplicación
 ```bash
 dotnet run --project EnglishLearning.Api
 ```
-
-La API y el cliente Blazor WASM estarán disponibles en:
-- **API + UI**: `https://localhost:7017` o `http://localhost:5252`
-- **Swagger**: `https://localhost:7017/swagger`
-- **Health check**: `https://localhost:7017/health`
+La aplicación aplicará automáticamente las migraciones pendientes y cargará las lecciones iniciales. Estará disponible en:
+* **Aplicación Web**: [https://localhost:7017](https://localhost:7017) o [http://localhost:5252](http://localhost:5252)
+* **Swagger UI**: [https://localhost:7017/swagger](https://localhost:7017/swagger)
 
 ---
 
 ## Setup con Docker
 
-El `docker-compose.yml` levanta **PostgreSQL 16** y **pgAdmin 4** para el entorno de desarrollo. No incluye el build de la aplicación .NET (eso lo hace el `Dockerfile` para producción).
-
-### Levantar la base de datos
-
+### Base de Datos para Desarrollo Local
 ```bash
 docker compose up -d
 ```
+* **PostgreSQL 16**: `localhost:5432` (`postgres` / `postgres`)
+* **pgAdmin 4**: [http://localhost:5050](http://localhost:5050) (`admin@englishlearning.com` / `admin`)
 
-Esto inicia:
-- **PostgreSQL** en `localhost:5432` (usuario: `postgres`, contraseña: `postgres`, base de datos: `englishlearning`)
-- **pgAdmin** en `http://localhost:5050` (email: `admin@englishlearning.com`, contraseña: `admin`)
-
-### Detener los servicios
-
+### Compilación y Ejecución del Contenedor de Producción
 ```bash
-docker compose down
-```
+# Compilar imagen unificada (API + Blazor WASM)
+docker build -t englishlearning-app .
 
-Para eliminar también el volumen de datos:
-
-```bash
-docker compose down -v
-```
-
-### Build de imagen de producción
-
-El `Dockerfile` usa un build multi-stage:
-
-```
-Stage 1 (build)  → SDK .NET 9 → restore + build
-Stage 2 (publish) → dotnet publish -c Release
-Stage 3 (final)  → ASP.NET Runtime .NET 9 → imagen mínima
-```
-
-```bash
-docker build -t englishlearning-api .
+# Ejecutar contenedor
 docker run -p 8080:8080 \
-  -e ConnectionStrings__DefaultConnection="Host=...;..." \
-  -e Jwt__SecretKey="..." \
-  -e Gemini__ApiKey="..." \
-  englishlearning-api
+  -e ConnectionStrings__DefaultConnection="Host=...;Database=...;Username=...;Password=..." \
+  -e Jwt__SecretKey="SuperClaveSecretaParaProduccion123456789!#" \
+  -e Gemini__ApiKey="AIzaSy..." \
+  -e Brevo__ApiKey="xkeysib-..." \
+  -e Brevo__FromEmail="tu_correo@gmail.com" \
+  -e EnableSwagger="true" \
+  englishlearning-app
 ```
 
-La aplicación escucha en el puerto `8080` dentro del contenedor (`ASPNETCORE_HTTP_PORTS=8080`).
+---
+
+## Configuración y Variables de Entorno
+
+En entornos de producción (como Render o Kubernetes), la configuración se mapea mediante variables de entorno usando el estándar de doble guión bajo (`__`):
+
+| Variable de Entorno | Sección en `appsettings.json` | Obligatoria | Descripción |
+| :--- | :--- | :---: | :--- |
+| `ConnectionStrings__DefaultConnection` | `ConnectionStrings.DefaultConnection` | **Sí** | Cadena de conexión PostgreSQL (ej. Supabase modo sesión, puerto 5432). |
+| `Jwt__SecretKey` | `Jwt.SecretKey` | **Sí** | Clave criptográfica HMAC para firmar tokens JWT (mínimo 32 caracteres). |
+| `Jwt__Issuer` | `Jwt.Issuer` | No | Emisor del token (default: `EnglishLearning.Api`). |
+| `Jwt__Audience` | `Jwt.Audience` | No | Audiencia esperada del token (default: `EnglishLearning.Client`). |
+| `Gemini__ApiKey` | `Gemini.ApiKey` | **Sí** | Clave API de Google AI Studio (empieza con `AIzaSy...`). |
+| `Gemini__Model` | `Gemini.Model` | No | Modelo primario de Gemini (default: `gemini-3.8-flash`). |
+| `Gemini__FallbackModel` | `Gemini.FallbackModel` | No | Modelo de respaldo si se agota la cuota (default: `gemini-3.5-flash-lite`). |
+| `Brevo__ApiKey` | `Brevo.ApiKey` | **Sí** | Clave API de Brevo para envío de emails (empieza con `xkeysib-...`). |
+| `Brevo__FromEmail` | `Brevo.FromEmail` | **Sí** | Correo electrónico verificado como remitente en la cuenta de Brevo. |
+| `Brevo__FromName` | `Brevo.FromName` | No | Nombre que aparecerá en el remitente de los correos recibidos. |
+| `EnableSwagger` | — | No | Si es `true`, expone la UI de Swagger en producción en `/swagger`. |
+| `ASPNETCORE_HTTP_PORTS` | — | No | Puerto de escucha HTTP en Linux Docker (default en Render: `8080`). |
+| `ASPNETCORE_ENVIRONMENT` | — | No | Entorno de ejecución (`Production` o `Development`). |
 
 ---
 
-## Configuración — variables de entorno
+## Migraciones y Seeding de EF Core
 
-Toda la configuración vive en `appsettings.json`. En producción las secciones sensibles se pasan como variables de entorno usando la convención de ASP.NET Core (`__` como separador de sección).
+El proyecto gestiona la persistencia mediante migraciones de **Entity Framework Core**:
+* **Migraciones automáticas al inicio**: `Program.cs` ejecuta `dbContext.Database.MigrateAsync()` en el arranque del contenedor.
+* **Seeding idempotente**: `SeedDataService` carga datos iniciales de lecciones, ejercicios y preguntas diagnósticas desde archivos JSON ubicados en `Seed/Data/`.
 
-| Variable de entorno | Sección en appsettings | Descripción |
-|---|---|---|
-| `ConnectionStrings__DefaultConnection` | `ConnectionStrings.DefaultConnection` | Connection string de PostgreSQL |
-| `ConnectionStrings__Supabase` | `ConnectionStrings.Supabase` | Alternativa Supabase (si no existe `DefaultConnection`) |
-| `Jwt__SecretKey` | `Jwt.SecretKey` | Clave HMAC para firmar JWT (mínimo 32 chars) |
-| `Jwt__Issuer` | `Jwt.Issuer` | Issuer del token (default: `EnglishLearning.Api`) |
-| `Jwt__Audience` | `Jwt.Audience` | Audience del token (default: `EnglishLearning.Client`) |
-| `Jwt__AccessTokenExpirationMinutes` | `Jwt.AccessTokenExpirationMinutes` | TTL access token (default: `15`) |
-| `Jwt__RefreshTokenExpirationDays` | `Jwt.RefreshTokenExpirationDays` | TTL refresh token (default: `7`) |
-| `Gemini__ApiKey` | `Gemini.ApiKey` | API Key de Google Gemini AI |
-| `Gemini__Model` | `Gemini.Model` | Modelo de Gemini (default: `gemini-3.8-flash`) |
-| `Gemini__TimeoutSeconds` | `Gemini.TimeoutSeconds` | Timeout de la llamada a Gemini (default: `25`) |
-| `Brevo__ApiKey` | `Brevo.ApiKey` | API Key de Brevo para emails |
-| `Brevo__FromEmail` | `Brevo.FromEmail` | Dirección de envío de emails |
-| `SeedData__AutoSeedOnStartup` | `SeedData.AutoSeedOnStartup` | Cargar datos iniciales al arrancar (default: `true`) |
-| `EnableSwagger` | — | Habilita Swagger fuera de Development (default: `false`) |
-| `ASPNETCORE_ENVIRONMENT` | — | `Development` o `Production` |
-
-### Rate limiting
-
-Configurado en `appsettings.json` bajo `IpRateLimiting`:
-
-| Regla | Endpoint | Límite |
-|---|---|---|
-| General | `*` | 100 requests / minuto |
-| Login | `POST:/api/v1/auth/login` | 10 requests / minuto |
-| Registro | `POST:/api/v1/auth/register` | 5 requests / hora |
-
----
-
-## Migraciones EF Core
-
-El proyecto usa EF Core con Npgsql. Las migraciones ya existen y se aplican automáticamente en el arranque. Para trabajar con ellas manualmente:
-
+### Comandos de Mantenimiento Manual
 ```bash
-# Desde la raíz del repositorio
-
-# Crear una nueva migración
+# Agregar una nueva migración
 dotnet ef migrations add NombreDeMigracion \
   --project EnglishLearning.Infrastructure \
   --startup-project EnglishLearning.Api
 
-# Aplicar migraciones manualmente
+# Aplicar migraciones a la base de datos
 dotnet ef database update \
   --project EnglishLearning.Infrastructure \
   --startup-project EnglishLearning.Api
 
-# Revertir la última migración
-dotnet ef migrations remove \
-  --project EnglishLearning.Infrastructure \
-  --startup-project EnglishLearning.Api
-
-# Generar SQL sin ejecutarlo
+# Generar script SQL puro para auditoría
 dotnet ef migrations script \
   --project EnglishLearning.Infrastructure \
   --startup-project EnglishLearning.Api \
   --output migration.sql
 ```
 
-### Migraciones existentes
-
-| Migración | Fecha | Tablas creadas |
-|---|---|---|
-| `InitialCreate` | 2026-10-04 | `Usuarios`, `Lecciones`, `Ejercicios`, `RespuestasUsuario`, `ProgresoNiveles` |
-| `AddAuthTables` | 2026-10-04 | `RefreshTokens`, `EvaluacionesDiagnosticas`, `PreguntasDiagnosticas` |
-
 ---
 
-## Tests
+## Tests Unitarios y Cobertura
 
-El proyecto `EnglishLearning.Tests` contiene tests unitarios con **xUnit** y cobertura medida con **Coverlet**.
-
-### Estructura de tests
-
-| Directorio | Cobertura |
-|---|---|
-| `Auth/` | Tests de handlers de autenticación (Login, Register, OTP) |
-| `Events/` | Tests de domain events (LevelChanged, AssessmentCompleted) |
-| `Services/` | Tests de servicios de dominio (ExerciseEvaluator, LevelCalculator) |
-| `Fakes/` | Implementaciones fake de repositorios para aislar dependencias |
-
-### Ejecutar los tests
+La suite de pruebas automatizadas está construida con **xUnit** y mide la cobertura del núcleo del dominio y la aplicación:
 
 ```bash
-# Ejecutar todos los tests
-dotnet test EnglishLearning.Tests
+# Ejecutar todas las pruebas unitarias
+dotnet test
+```
 
-# Con reporte de cobertura
-dotnet test EnglishLearning.Tests \
-  --collect:"XPlat Code Coverage" \
-  --results-directory ./coverage
+### Métricas de Validación
+* **Pruebas Totales**: 32 pruebas unitarias.
+* **Estado**: ✅ **32 / 32 Superadas (100% Passing)**.
+* **Áreas Cubiertas**:
+  * Autenticación, generación y validación de OTP en memoria (`OtpAuthTests.cs`).
+  * Registro de usuarios, hash BCrypt y asignación inicial (`RegisterHandlerTests.cs`).
+  * Emisión y captura de eventos de dominio (`DomainEventDispatcherTests.cs`).
+  * Evaluación de respuestas con algoritmos exactos, difusos y expresiones regulares.
+  * Lógica matemática de cálculo y promoción de niveles CEFR.
 
-# Ver output detallado
-dotnet test EnglishLearning.Tests --verbosity normal
+---
+
+## Despliegue en Render
+
+El archivo `render.yaml` declara la infraestructura del Web Service:
+
+```yaml
+services:
+  - type: web
+    name: englishlearning-api
+    env: docker
+    region: oregon
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_HTTP_PORTS
+        value: 8080
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__SecretKey
+        generateValue: true
+      - key: Gemini__ApiKey
+        sync: false
+      - key: Brevo__ApiKey
+        sync: false
+      - key: Brevo__FromEmail
+        sync: false
+      - key: Brevo__FromName
+        value: English Learning Platform
+      - key: EnableSwagger
+        value: "true"
 ```
 
 ---
 
-## Deploy en Render
+## Preguntas Frecuentes y Troubleshooting
 
-El archivo `render.yaml` configura el deploy automático en [Render.com](https://render.com) usando Docker.
+### ❓ ¿Por qué no recibo el correo con el código OTP?
+1. **Bloqueo de IPs en Brevo**: Brevo bloquea solicitudes de IPs de centros de datos desconocidos por defecto. Ingresa a [https://app.brevo.com/security/authorised_ips](https://app.brevo.com/security/authorised_ips) y haz clic en **"Desactivar para claves API"**.
+2. **Remitente verificado**: La variable `Brevo__FromEmail` debe coincidir exactamente con el correo con el que registraste tu cuenta en Brevo (ej. tu cuenta de Gmail).
+3. **Carpeta de Spam**: Los correos transaccionales iniciales pueden llegar a la carpeta de correo no deseado/spam.
 
-### Configuración del servicio
+### ❓ ¿Por qué el Tutor de IA devuelve un error de mensaje?
+1. **API Key de Gemini**: Confirma que la variable `Gemini__ApiKey` en Render comience con `AIzaSy...` y que no contenga comillas ni espacios extra.
+2. **Cuota del modelo**: Si la cuota gratuita diaria de `gemini-3.8-flash` se satura, el sistema pasará automáticamente a `gemini-3.5-flash-lite`. Verifica el uso en la consola de [Google AI Studio](https://aistudio.google.com/).
 
-| Propiedad | Valor |
-|---|---|
-| Tipo | Web Service |
-| Runtime | Docker |
-| Plan | Free |
-| Región | Oregon (US West) |
-| Puerto expuesto | `8080` |
-| Health check | `GET /health` |
-
-### Pasos para desplegar
-
-1. Haz fork/push del repositorio a GitHub.
-2. Crea un nuevo servicio en [Render Dashboard](https://dashboard.render.com) → **New Web Service** → conecta tu repositorio.
-3. Render detectará automáticamente el `render.yaml`.
-4. Configura las variables de entorno sensibles en el dashboard de Render (marcadas con `sync: false` en el YAML):
-   - `ConnectionStrings__DefaultConnection` → tu connection string de Supabase o Render Postgres
-   - `Gemini__ApiKey` → tu API key de Google Gemini
-   - `Brevo__ApiKey` → tu API key de Brevo
-   - `Brevo__FromEmail` → tu email de envío
-5. La variable `Jwt__SecretKey` se genera automáticamente (`generateValue: true`).
-6. Render ejecutará el `Dockerfile` multi-stage y desplegará la imagen resultante.
-
-> **Nota:** En el plan gratuito de Render, el servicio se suspende tras 15 minutos de inactividad. El primer request después de la suspensión puede tardar ~30 segundos en despertar el servicio.
-
----
-
-## Formato de respuestas de error
-
-Todos los errores de la API devuelven un JSON estructurado consistente (via `ExceptionHandlingMiddleware` y `ValidationFilter`):
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "El campo Email es requerido.",
-    "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-  }
-}
-```
-
-| Código HTTP | `error.code` | Causa |
-|---|---|---|
-| `400` | `VALIDATION_ERROR` | FluentValidation falló o argumento inválido |
-| `401` | `UNAUTHORIZED` | JWT ausente, expirado o inválido |
-| `404` | `NOT_FOUND` | Recurso no encontrado |
-| `429` | — | Rate limit excedido (AspNetCoreRateLimit) |
-| `500` | `INTERNAL_ERROR` | Error no controlado del servidor |
-
-Cada request incluye un header `X-Correlation-Id` trazable en los logs de Serilog.
+### ❓ ¿Por qué la aplicación tarda cerca de 40 segundos en abrir por primera vez?
+En el plan **Free** de Render, los contenedores entran en reposo tras 15 minutos sin recibir tráfico para ahorrar recursos. El primer acceso desencadena un arranque en frío (*cold start*) que tarda entre 30 y 50 segundos. Una vez activo, responderá al instante.
