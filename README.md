@@ -41,6 +41,8 @@ Plataforma full-stack de aprendizaje de inglés construida con **.NET 9**, **Bla
 - [Tests Unitarios y Cobertura](#tests-unitarios-y-cobertura)
 - [Despliegue en Render](#despliegue-en-render)
 - [Preguntas Frecuentes y Troubleshooting](#preguntas-frecuentes-y-troubleshooting)
+- [Autor](#-autor)
+- [Licencia](#-licencia)
 
 ---
 
@@ -461,7 +463,7 @@ curl -X POST "https://englishlearning-mum4.onrender.com/api/v1/chat/ask" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TU_TOKEN_JWT" \
   -d '{
-    "message": "Can you explain the difference between 'make' and 'do' with examples?"
+    "message": "Can you explain the difference between make and do with examples?"
   }'
 ```
 
@@ -659,3 +661,18 @@ services:
 
 ### ❓ ¿Por qué la aplicación tarda cerca de 40 segundos en abrir por primera vez?
 En el plan **Free** de Render, los contenedores entran en reposo tras 15 minutos sin recibir tráfico para ahorrar recursos. El primer acceso desencadena un arranque en frío (*cold start*) que tarda entre 30 y 50 segundos. Una vez activo, responderá al instante.
+
+---
+
+## 👨‍💻 Autor
+
+Desarrollado por **Miguel León**  
+* GitHub: [@Leonme21](https://github.com/Leonme21)
+* Repositorio del Proyecto: [Leonme21/EnglishLearning](https://github.com/Leonme21/EnglishLearning)
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia **MIT**. Consulta el archivo `LICENSE` para más información.
+
