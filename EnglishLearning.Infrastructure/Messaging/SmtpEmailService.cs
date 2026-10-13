@@ -40,6 +40,7 @@ public sealed class SmtpEmailService : IEmailService
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
+            client.Timeout = 3000;
 
             // Connect using STARTTLS as required by skill specification
             await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls, cancellationToken);

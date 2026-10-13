@@ -64,18 +64,20 @@ public sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<Au
         var refreshToken = await _jwtTokenService.GenerateAndStoreRefreshTokenAsync(usuario.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Enviar correo de bienvenida al nuevo estudiante
+        // Enviar correo de bienvenida al nuevo estudiante (con timeout seguro)
         try
         {
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             await _emailService.SendEmailAsync(
                 usuario.Correo,
                 "¡Bienvenido a English Learning Platform!",
                 $"Hola {usuario.Nombre},\n\n¡Te damos la bienvenida a English Learning Platform!\nTu cuenta ha sido creada exitosamente con nivel inicial: {usuario.NivelActual}.\nYa puedes comenzar tus lecciones o realizar la evaluación diagnóstica para personalizar tu ruta.\n\n¡Mucho éxito en tu aprendizaje!\nEl equipo de English Learning",
-                cancellationToken);
+                linkedCts.Token);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "No se pudo enviar el correo de bienvenida al usuario {Email}. El registro se completó con éxito.", usuario.Correo);
+            _logger.LogWarning(ex, "No se pudo enviar el correo de bienvenida al usuario {Email} (puertos SMTP pueden estar bloqueados en Render Free).", usuario.Correo);
         }
 
         var response = new AuthResponse(

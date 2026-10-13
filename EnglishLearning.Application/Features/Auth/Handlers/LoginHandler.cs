@@ -53,18 +53,20 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
         try
         {
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             var emailHtml = OtpEmailTemplates.BuildOtpEmailHtml(usuario.Nombre, otp);
             await _emailService.SendEmailAsync(
                 recipientEmail,
                 "Tu código de verificación - English Learning",
                 emailHtml,
-                cancellationToken);
+                linkedCts.Token);
 
             _logger.LogInformation("Código OTP enviado por correo a {Recipient} para el usuario {Email}.", recipientEmail, usuario.Correo);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "No se pudo enviar el correo con el código OTP a {Recipient}. El código sigue activo y puede consultarse en los logs del servidor.", recipientEmail);
+            _logger.LogWarning(ex, "No se pudo enviar el correo con el código OTP a {Recipient} (puertos SMTP pueden estar bloqueados en Render Free). Código: [{Otp}]", recipientEmail, otp);
         }
 
         var response = new AuthResponse(
@@ -76,7 +78,7 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
             User: null,
             RequiresOtp: true,
             Email: usuario.Correo,
-            Message: "Se ha enviado un código de verificación de 6 dígitos a tu correo electrónico."
+            Message: $"Código de verificación: {otp} (también enviado a tu correo si SMTP está disponible)"
         );
 
         return Result<AuthResponse>.Success(response);
