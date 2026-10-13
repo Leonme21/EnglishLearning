@@ -59,7 +59,9 @@ public sealed class ResendOtpHandler : IRequestHandler<ResendOtpCommand, Result<
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al reenviar código OTP a {Recipient}", recipientEmail);
-            return Result<bool>.Failure(Error.Internal("Auth.EmailSendFailed", "No se pudo reenviar el correo de verificación."));
+            return Result<bool>.Failure(Error.Internal(
+                "Auth.EmailSendFailed", 
+                $"No se pudo reenviar el correo: {ex.Message}"));
         }
     }
 }

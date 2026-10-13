@@ -69,7 +69,7 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResp
             _logger.LogError(ex, "Error al enviar correo con código OTP a {Recipient}", recipientEmail);
             return Result<AuthResponse>.Failure(Error.Internal(
                 "Auth.EmailSendFailed",
-                "No se pudo enviar el código de verificación por correo electrónico. Por favor verifica que tu servicio de correo esté configurado o intenta nuevamente."));
+                $"No se pudo enviar el correo: {ex.Message}"));
         }
 
         var response = new AuthResponse(
