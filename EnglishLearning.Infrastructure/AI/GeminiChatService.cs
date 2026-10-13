@@ -36,9 +36,17 @@ public sealed class GeminiChatService : IChatService
         _logger = logger;
     }
 
+    private static volatile string? _cachedWorkingModel;
+
     public async Task<string> SendMessageAsync(string message, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        var apiKey = ResolveApiKey();
+        var primaryModel = GetEffectiveModel();
+        var fallbackModel = !string.IsNullOrWhiteSpace(_settings.FallbackModel) && _settings.FallbackModel != "gemini-1.5-flash"
+            ? _settings.FallbackModel
+            : "gemini-2.0-flash";
 
         // Polly Resilience Pipeline: Fallback wrapping Retry policy
         var fallbackPolicy = Policy
@@ -47,7 +55,7 @@ public sealed class GeminiChatService : IChatService
             .Or<TimeoutException>()
             .Or<TaskCanceledException>()
             .FallbackAsync(
-                fallbackAction: async ct => await ExecuteHttpRequestAsync(_settings.FallbackModel, message, ct),
+                fallbackAction: async ct => await ExecuteHttpRequestAsync(apiKey, fallbackModel, message, ct),
                 onFallbackAsync: async outcome =>
                 {
                     var traceId = Activity.Current?.TraceId.ToString() 
@@ -59,7 +67,7 @@ public sealed class GeminiChatService : IChatService
 
                     _logger.LogWarning(
                         "Fallback policy activated. Switching to secondary model '{FallbackModel}'. TraceId: {TraceId}. Reason: {Reason} (Status: {StatusCode})",
-                        _settings.FallbackModel, traceId, reason, statusCode);
+                        fallbackModel, traceId, reason, statusCode);
 
                     await Task.CompletedTask;
                 });
@@ -74,15 +82,27 @@ public sealed class GeminiChatService : IChatService
                 onRetry: (outcome, timespan, attempt, context) =>
                 {
                     _logger.LogWarning(
-                        "Transient failure contacting Gemini on primary model '{Model}'. Retry attempt {Attempt} after {Seconds}s. Status: {StatusCode}",
-                        _settings.Model, attempt, timespan.TotalSeconds, outcome.Result?.StatusCode);
+                        "Transient failure contacting Gemini on model '{Model}'. Retry attempt {Attempt} after {Seconds}s. Status: {StatusCode}",
+                        primaryModel, attempt, timespan.TotalSeconds, outcome.Result?.StatusCode);
                 });
 
         AsyncPolicyWrap<HttpResponseMessage> policyWrap = Policy.WrapAsync(fallbackPolicy, retryPolicy);
 
         HttpResponseMessage response = await policyWrap.ExecuteAsync(
-            async ct => await ExecuteHttpRequestAsync(_settings.Model, message, ct),
+            async ct => await ExecuteHttpRequestAsync(apiKey, primaryModel, message, ct),
             cancellationToken);
+
+        // Si el modelo retorna 404 (modelo retirado o no soportado en esta versión de API), auto-descubrir modelos disponibles
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Modelo '{Model}' retornó 404. Iniciando auto-descubrimiento de modelos compatibles...", primaryModel);
+            var discoveredModel = await AutoDiscoverSupportedModelAsync(apiKey, cancellationToken);
+            if (!string.IsNullOrEmpty(discoveredModel))
+            {
+                _logger.LogInformation("Reintentando con modelo auto-descubierto: '{DiscoveredModel}'", discoveredModel);
+                response = await ExecuteHttpRequestAsync(apiKey, discoveredModel, message, cancellationToken);
+            }
+        }
 
         if (!response.IsSuccessStatusCode)
         {
@@ -95,7 +115,7 @@ public sealed class GeminiChatService : IChatService
         return ExtractTextFromResponse(responseJson);
     }
 
-    private async Task<HttpResponseMessage> ExecuteHttpRequestAsync(string model, string message, CancellationToken cancellationToken)
+    private string ResolveApiKey()
     {
         var apiKey = !string.IsNullOrWhiteSpace(_settings.ApiKey) && _settings.ApiKey != "YOUR_GEMINI_API_KEY"
             ? _settings.ApiKey
@@ -109,6 +129,84 @@ public sealed class GeminiChatService : IChatService
             throw new InvalidOperationException("La clave API de Gemini (Gemini__ApiKey) no está configurada en el servidor.");
         }
 
+        return apiKey.Trim();
+    }
+
+    private string GetEffectiveModel()
+    {
+        if (!string.IsNullOrEmpty(_cachedWorkingModel))
+        {
+            return _cachedWorkingModel;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_settings.Model) && _settings.Model != "gemini-1.5-flash")
+        {
+            return _settings.Model;
+        }
+
+        return "gemini-2.0-flash";
+    }
+
+    private async Task<string?> AutoDiscoverSupportedModelAsync(string apiKey, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var listUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey.Trim()}";
+            using var response = await _httpClient.GetAsync(listUrl, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("models", out var modelsArray))
+                {
+                    var candidates = new List<string>();
+                    foreach (var modelElement in modelsArray.EnumerateArray())
+                    {
+                        var name = modelElement.GetProperty("name").GetString() ?? "";
+                        var supportsGenerate = false;
+                        if (modelElement.TryGetProperty("supportedGenerationMethods", out var methods))
+                        {
+                            foreach (var m in methods.EnumerateArray())
+                            {
+                                if (m.GetString() == "generateContent")
+                                {
+                                    supportsGenerate = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (supportsGenerate)
+                        {
+                            var cleanName = name.StartsWith("models/") ? name.Substring("models/".Length) : name;
+                            candidates.Add(cleanName);
+                        }
+                    }
+
+                    var selected = candidates.FirstOrDefault(c => c.Contains("2.0-flash"))
+                        ?? candidates.FirstOrDefault(c => c.Contains("flash"))
+                        ?? candidates.FirstOrDefault(c => c.Contains("gemini"))
+                        ?? candidates.FirstOrDefault();
+
+                    if (!string.IsNullOrEmpty(selected))
+                    {
+                        _logger.LogInformation("Modelo Gemini descubierto automáticamente: {SelectedModel}", selected);
+                        _cachedWorkingModel = selected;
+                        return selected;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error al auto-descubrir modelos disponibles en Google Gemini API.");
+        }
+
+        return null;
+    }
+
+    private async Task<HttpResponseMessage> ExecuteHttpRequestAsync(string apiKey, string model, string message, CancellationToken cancellationToken)
+    {
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey.Trim()}";
 
         var payload = new
@@ -128,7 +226,7 @@ public sealed class GeminiChatService : IChatService
 
         // Enforce max timeout per attempt
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var timeout = _settings.TimeoutSeconds > 0 ? _settings.TimeoutSeconds : 20;
+        var timeout = _settings.TimeoutSeconds > 0 ? _settings.TimeoutSeconds : 25;
         cts.CancelAfter(TimeSpan.FromSeconds(timeout));
 
         return await _httpClient.PostAsJsonAsync(url, payload, cts.Token);
