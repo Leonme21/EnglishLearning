@@ -44,9 +44,9 @@ public sealed class GeminiChatService : IChatService
 
         var apiKey = ResolveApiKey();
         var primaryModel = GetEffectiveModel();
-        var fallbackModel = !string.IsNullOrWhiteSpace(_settings.FallbackModel) && _settings.FallbackModel != "gemini-1.5-flash"
+        var fallbackModel = !string.IsNullOrWhiteSpace(_settings.FallbackModel) && !_settings.FallbackModel.Contains("1.5") && !_settings.FallbackModel.Contains("2.0") && !_settings.FallbackModel.Contains("2.5")
             ? _settings.FallbackModel
-            : "gemini-2.0-flash";
+            : "gemini-3.8-flash";
 
         // Polly Resilience Pipeline: Fallback wrapping Retry policy
         var fallbackPolicy = Policy
@@ -139,12 +139,12 @@ public sealed class GeminiChatService : IChatService
             return _cachedWorkingModel;
         }
 
-        if (!string.IsNullOrWhiteSpace(_settings.Model) && _settings.Model != "gemini-1.5-flash")
+        if (!string.IsNullOrWhiteSpace(_settings.Model) && !_settings.Model.Contains("1.5") && !_settings.Model.Contains("2.0") && !_settings.Model.Contains("2.5"))
         {
             return _settings.Model;
         }
 
-        return "gemini-2.0-flash";
+        return "gemini-3.8-flash";
     }
 
     private async Task<string?> AutoDiscoverSupportedModelAsync(string apiKey, CancellationToken cancellationToken)
@@ -183,10 +183,12 @@ public sealed class GeminiChatService : IChatService
                         }
                     }
 
-                    var selected = candidates.FirstOrDefault(c => c.Contains("2.0-flash"))
-                        ?? candidates.FirstOrDefault(c => c.Contains("flash"))
-                        ?? candidates.FirstOrDefault(c => c.Contains("gemini"))
-                        ?? candidates.FirstOrDefault();
+                    var validCandidates = candidates.Where(c => !c.Contains("1.5") && !c.Contains("2.0") && !c.Contains("2.5")).ToList();
+
+                    var selected = validCandidates.FirstOrDefault(c => c.Contains("3.8-flash"))
+                        ?? validCandidates.FirstOrDefault(c => c.Contains("flash"))
+                        ?? validCandidates.FirstOrDefault(c => c.Contains("gemini"))
+                        ?? "gemini-3.8-flash";
 
                     if (!string.IsNullOrEmpty(selected))
                     {
@@ -202,7 +204,7 @@ public sealed class GeminiChatService : IChatService
             _logger.LogWarning(ex, "Error al auto-descubrir modelos disponibles en Google Gemini API.");
         }
 
-        return null;
+        return "gemini-3.8-flash";
     }
 
     private async Task<HttpResponseMessage> ExecuteHttpRequestAsync(string apiKey, string model, string message, CancellationToken cancellationToken)
