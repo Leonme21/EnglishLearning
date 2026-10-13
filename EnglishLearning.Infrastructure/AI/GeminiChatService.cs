@@ -46,7 +46,7 @@ public sealed class GeminiChatService : IChatService
         var primaryModel = GetEffectiveModel();
         var fallbackModel = !string.IsNullOrWhiteSpace(_settings.FallbackModel) && !_settings.FallbackModel.Contains("1.5") && !_settings.FallbackModel.Contains("2.0") && !_settings.FallbackModel.Contains("2.5")
             ? _settings.FallbackModel
-            : "gemini-3.8-flash";
+            : "gemini-3.5-flash-lite";
 
         // Polly Resilience Pipeline: Fallback wrapping Retry policy
         var fallbackPolicy = Policy
