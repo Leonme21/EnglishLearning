@@ -35,9 +35,16 @@ public sealed class ChatController : BaseApiController
         var userId = CurrentUserId;
         _logger.LogInformation("Processing chat query for user {UserId}", userId);
 
-        var response = await _chatService.SendMessageAsync(request.Message, cancellationToken);
-
-        return Ok(new ChatResponse(response));
+        try
+        {
+            var response = await _chatService.SendMessageAsync(request.Message, cancellationToken);
+            return Ok(new ChatResponse(response));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error comunicando con Gemini AI para el usuario {UserId}", userId);
+            return Ok(new ChatResponse("Disculpa, en este momento el tutor de IA no pudo procesar tu mensaje. Verifica tu Gemini API Key o intenta nuevamente en unos segundos."));
+        }
     }
 }
 

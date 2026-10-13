@@ -84,7 +84,12 @@ public sealed class GeminiChatService : IChatService
             async ct => await ExecuteHttpRequestAsync(_settings.Model, message, ct),
             cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Error al invocar Google Gemini API. HTTP {StatusCode}. Respuesta: {ErrorBody}", response.StatusCode, errorBody);
+            response.EnsureSuccessStatusCode();
+        }
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         return ExtractTextFromResponse(responseJson);
