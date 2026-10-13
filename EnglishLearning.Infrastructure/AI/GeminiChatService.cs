@@ -88,7 +88,7 @@ public sealed class GeminiChatService : IChatService
         {
             var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogError("Error al invocar Google Gemini API. HTTP {StatusCode}. Respuesta: {ErrorBody}", response.StatusCode, errorBody);
-            response.EnsureSuccessStatusCode();
+            throw new HttpRequestException($"Error Gemini API ({response.StatusCode}): {errorBody}");
         }
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -97,7 +97,19 @@ public sealed class GeminiChatService : IChatService
 
     private async Task<HttpResponseMessage> ExecuteHttpRequestAsync(string model, string message, CancellationToken cancellationToken)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={_settings.ApiKey}";
+        var apiKey = !string.IsNullOrWhiteSpace(_settings.ApiKey) && _settings.ApiKey != "YOUR_GEMINI_API_KEY"
+            ? _settings.ApiKey
+            : Environment.GetEnvironmentVariable("Gemini__ApiKey")
+              ?? Environment.GetEnvironmentVariable("Gemini:ApiKey")
+              ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_GEMINI_API_KEY")
+        {
+            _logger.LogError("Gemini API Key no está configurada en las variables de entorno (Gemini__ApiKey).");
+            throw new InvalidOperationException("La clave API de Gemini (Gemini__ApiKey) no está configurada en el servidor.");
+        }
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey.Trim()}";
 
         var payload = new
         {
@@ -114,9 +126,9 @@ public sealed class GeminiChatService : IChatService
             }
         };
 
-        // Enforce max 10s timeout per attempt as specified in resilience requirements
+        // Enforce max timeout per attempt
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var timeout = _settings.TimeoutSeconds > 0 ? _settings.TimeoutSeconds : 10;
+        var timeout = _settings.TimeoutSeconds > 0 ? _settings.TimeoutSeconds : 20;
         cts.CancelAfter(TimeSpan.FromSeconds(timeout));
 
         return await _httpClient.PostAsJsonAsync(url, payload, cts.Token);

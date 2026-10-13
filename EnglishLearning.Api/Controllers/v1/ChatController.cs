@@ -43,7 +43,7 @@ public sealed class ChatController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error comunicando con Gemini AI para el usuario {UserId}", userId);
-            return Ok(new ChatResponse("Disculpa, en este momento el tutor de IA no pudo procesar tu mensaje. Verifica tu Gemini API Key o intenta nuevamente en unos segundos."));
+            return Ok(new ChatResponse($"Disculpa, en este momento el tutor de IA no pudo procesar tu mensaje: {ex.Message}"));
         }
     }
 }
