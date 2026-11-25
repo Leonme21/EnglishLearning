@@ -25,7 +25,7 @@ public sealed class AuthController : BaseApiController
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
     {
-        var command = new VerifyOtpCommand(request.Email, request.Code);
+        var command = new VerifyOtpCommand(request.ChallengeId, request.Code);
         var result = await _mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
@@ -33,7 +33,7 @@ public sealed class AuthController : BaseApiController
     [HttpPost("resend-otp")]
     public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request, CancellationToken cancellationToken)
     {
-        var command = new ResendOtpCommand(request.Email);
+        var command = new ResendOtpCommand(request.ChallengeId);
         var result = await _mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
@@ -61,6 +61,14 @@ public sealed class AuthController : BaseApiController
         var result = await _mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    [HttpPost("request-password-reset")]
+    public async Task<IActionResult> RequestPasswordReset(RequestPasswordResetRequest request, CancellationToken ct) =>
+        HandleResult(await _mediator.Send(new RequestPasswordResetCommand(request.Email), ct));
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct) =>
+        HandleResult(await _mediator.Send(new ResetPasswordCommand(request.ChallengeId, request.Code, request.Password), ct));
 
     [Authorize]
     [HttpGet("me")]

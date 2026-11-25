@@ -45,6 +45,7 @@ public class EjercicioConfiguration : IEntityTypeConfiguration<Ejercicio>
         builder.Property(e => e.Contenido).IsRequired().HasMaxLength(4000);
         builder.Property(e => e.RespuestaCorrecta).IsRequired().HasMaxLength(2000);
         builder.Property(e => e.Tipo).HasConversion<string>();
+        builder.Property(e => e.EstrategiaEvaluacion).HasMaxLength(40);
         builder.HasIndex(e => e.LeccionId);
     }
 }

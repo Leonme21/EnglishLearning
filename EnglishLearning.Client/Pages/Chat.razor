@@ -572,6 +572,8 @@
 
 @code {
     private List<ChatMessage> _messages = new();
+    private readonly List<TutorTurn> _context = [];
+    private int _conversationVersion;
     private string _currentMessage = string.Empty;
     private bool _isSending = false;
 
@@ -602,6 +604,8 @@
 
     private void ClearChat()
     {
+        _context.Clear();
+        _conversationVersion++;
         InitializeGreeting();
         ToastService.ShowInfo("Conversación reiniciada.");
     }
@@ -614,7 +618,7 @@
 
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrWhiteSpace(_currentMessage) || _isSending) return;
+        if (string.IsNullOrWhiteSpace(_currentMessage) || _currentMessage.Length > 2_000 || _isSending) return;
 
         var userText = _currentMessage.Trim();
         _currentMessage = string.Empty;
@@ -630,7 +634,13 @@
         StateHasChanged();
         await ScrollToBottomAsync();
 
-        var result = await ChatService.SendMessageAsync(userText);
+        var version = _conversationVersion;
+        var result = await ChatService.SendMessageAsync(userText, _context.ToArray());
+        if (version != _conversationVersion)
+        {
+            _isSending = false;
+            return;
+        }
 
         _messages.Remove(loadingMsg);
         _isSending = false;
@@ -638,6 +648,11 @@
         if (result.IsSuccess && result.Data != null)
         {
             _messages.Add(ChatMessage.Bot(result.Data.Response));
+            _context.Add(new TutorTurn(true, userText));
+            var response = result.Data.Response;
+            _context.Add(new TutorTurn(false, response[..Math.Min(response.Length, 2_000)]));
+            if (_context.Count > 8)
+                _context.RemoveRange(0, 2);
         }
         else
         {

@@ -18,6 +18,5 @@ public sealed record ExerciseDetailDto(
     int Id,
     int LeccionId,
     string Contenido,
-    string Tipo,
-    string RespuestaCorrecta
+    string Tipo
 );

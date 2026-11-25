@@ -118,6 +118,30 @@ internal static class LessonSeedData
             }),
     };
 
+    private static readonly Dictionary<string, (string Prompt, string Pattern)> Additional =
+        new(StringComparer.Ordinal)
+        {
+            ["Saludos y presentaciones"] = ("Preséntate usando el nombre Alex en inglés.", @"^(hello,?\s+)?(i am|i'm|my name is) alex[.!]?$"),
+            ["Mi rutina diaria"] = ("Traduce: Ella trabaja los lunes.", @"^she works on mondays[.!]?$"),
+            ["El pasado simple"] = ("Traduce: Compré un libro ayer.", @"^(yesterday i bought a book|i bought a book yesterday)[.!]?$"),
+            ["Make vs Do y phrasal verbs"] = ("Traduce: Por favor, apaga la luz.", @"^(please,?\s+turn off the light|turn off the light,?\s+please)[.!]?$"),
+            ["Present perfect vs past simple"] = ("Escribe: Vivo aquí desde 2020, usando present perfect.", @"^i (have|'ve) lived here since 2020[.!]?$|^i've lived here since 2020[.!]?$"),
+            ["Falsos amigos"] = ("Traduce: En realidad, ella es muy sensata.", @"^actually,? she('s| is) very sensible[.!]?$"),
+            ["Condicionales y matices"] = ("Traduce: Si tuviera más tiempo, leería más.", @"^if i had more time,? i (would read|'d read) more[.!]?$|^if i had more time,? i'd read more[.!]?$"),
+            ["Registro formal vs informal"] = ("Solicita ayuda de forma cortés usando could y please.", @"^could you (please (help|assist) me|(help|assist) me,? please)\?$"),
+            ["Expresiones idiomáticas"] = ("Reescribe con inversión: I've never felt so relieved.", @"^never have i felt so relieved[.!]?$"),
+            ["Inglés académico"] = ("Escribe: Se necesitan más investigaciones, en registro académico.", @"^further research is (needed|required|necessary)[.!]?$")
+        };
+
+    public static Ejercicio? AdditionalPractice(Leccion lesson)
+    {
+        if (!Additional.TryGetValue(lesson.Titulo, out var practice))
+            return null;
+        var result = Ejercicio.Create(0, lesson.Id, practice.Prompt, practice.Pattern, TipoEjercicio.Escritura).GetValueOrThrow();
+        result.ConfigurarEvaluacion("Regex");
+        return result;
+    }
+
     public static IEnumerable<Leccion> Build()
     {
         foreach (var l in Lessons)

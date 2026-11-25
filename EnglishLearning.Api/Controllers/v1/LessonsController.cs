@@ -1,7 +1,6 @@
 using EnglishLearning.Application.Features.Lessons.DTOs;
 using EnglishLearning.Application.Features.Lessons.Queries;
 using EnglishLearning.Application.Features.Lessons.Commands;
-using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,44 +9,24 @@ using Microsoft.AspNetCore.Mvc;
 namespace EnglishLearning.Api.Controllers.v1;
 
 [Authorize]
-public sealed class LessonsController : BaseApiController
+public sealed class LessonsController(IMediator mediator) : BaseApiController
 {
-    private readonly IMediator _mediator;
-
-    public LessonsController(IMediator mediator) => _mediator = mediator;
-
+    [HttpGet]
     [HttpGet("by-level/{nivel}")]
-    public async Task<IActionResult> GetByLevel(NivelIngles nivel, CancellationToken cancellationToken)
-    {
-        var query = new GetLessonsByLevelQuery(nivel);
-        var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetByLevel(NivelIngles? nivel, CancellationToken ct) =>
+        CurrentUserId is int id ? HandleResult(await mediator.Send(new GetLessonsByLevelQuery(id, nivel), ct)) : Unauthorized();
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
-    {
-        var query = new GetLessonByIdQuery(id);
-        var result = await _mediator.Send(query, cancellationToken);
-        return result is null ? NotFound() : Ok(result);
-    }
+    public async Task<IActionResult> GetById(int id, CancellationToken ct) =>
+        CurrentUserId is int userId ? HandleResult(await mediator.Send(new GetLessonByIdQuery(userId, id), ct)) : Unauthorized();
 
     [HttpGet("exercises/{id:int}")]
-    public async Task<IActionResult> GetExercise(int id, CancellationToken cancellationToken)
-    {
-        var query = new GetExerciseByIdQuery(id);
-        var result = await _mediator.Send(query, cancellationToken);
-        return result is null ? NotFound() : Ok(result);
-    }
+    public async Task<IActionResult> GetExercise(int id, CancellationToken ct) =>
+        CurrentUserId is int userId ? HandleResult(await mediator.Send(new GetExerciseByIdQuery(userId, id), ct)) : Unauthorized();
 
     [HttpPost("evaluate")]
-    public async Task<IActionResult> EvaluateExercise([FromBody] EvaluateExerciseRequest request, CancellationToken cancellationToken)
-    {
-        if (CurrentUserId is null)
-            return Unauthorized();
-
-        var command = new EvaluateExerciseCommand(CurrentUserId.Value, request.EjercicioId, request.RespuestaTexto);
-        var result = await _mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
+    public async Task<IActionResult> EvaluateExercise(EvaluateExerciseRequest request, CancellationToken ct) =>
+        CurrentUserId is int userId
+            ? HandleResult(await mediator.Send(new EvaluateExerciseCommand(userId, request.EjercicioId, request.RespuestaTexto), ct))
+            : Unauthorized();
 }

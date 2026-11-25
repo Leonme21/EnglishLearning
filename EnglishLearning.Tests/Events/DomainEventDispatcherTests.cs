@@ -92,7 +92,7 @@ public class DomainEventDispatcherTests
     public void Usuario_ActualizarNivel_ShouldEmitLevelChangedEvent()
     {
         // Arrange
-        var usuario = Usuario.Create(1, "Test User", "test@test.com", "hash", NivelIngles.A1).Value;
+        var usuario = Usuario.Create(1, "Test User", "test@test.com", "hash", NivelIngles.A1).GetValueOrThrow();
 
         // Act
         usuario.ActualizarNivel(NivelIngles.B1);

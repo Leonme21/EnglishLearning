@@ -39,10 +39,6 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.CommandTimeout(120);
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorCodesToAdd: null);
             }));
 
         // Repositories
@@ -75,6 +71,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<EnglishLearning.Application.Abstractions.IEmailService, EnglishLearning.Infrastructure.Messaging.BrevoEmailService>();
         services.AddHttpClient<EnglishLearning.Application.Abstractions.IChatService, EnglishLearning.Infrastructure.AI.GeminiChatService>();
         services.AddScoped<EnglishLearning.Domain.Events.IDomainEventDispatcher, EnglishLearning.Infrastructure.Events.DomainEventDispatcher>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<EnglishLearning.Domain.Services.IOtpService, EnglishLearning.Infrastructure.Services.OtpService>();
 
         return services;

@@ -1,46 +1,50 @@
 using EnglishLearning.Application.Features.Lessons.DTOs;
-using EnglishLearning.Application.Features.Lessons.Queries;
+using EnglishLearning.Domain.Common;
+using EnglishLearning.Domain.Enums;
 using EnglishLearning.Domain.Interfaces;
 using Mapster;
 using MediatR;
 
 namespace EnglishLearning.Application.Features.Lessons.Queries;
 
-public sealed class GetLessonsByLevelHandler : IRequestHandler<GetLessonsByLevelQuery, IReadOnlyList<LessonDto>>
+public sealed class LessonQueries(ILeccionQueryRepository lessons, IUsuarioQueryRepository users) :
+    IRequestHandler<GetLessonsByLevelQuery, Result<IReadOnlyList<LessonDto>>>,
+    IRequestHandler<GetLessonByIdQuery, Result<LessonDto>>,
+    IRequestHandler<GetExerciseByIdQuery, Result<ExerciseDetailDto>>
 {
-    private readonly ILeccionQueryRepository _repository;
+    internal static readonly Error WrongLevel =
+        Error.Forbidden("Lesson.WrongLevel", "Solo puedes practicar las lecciones de tu nivel actual.");
+    private static readonly Error MissingLesson = Error.NotFound("Lesson.NotFound", "Lección no encontrada.");
 
-    public GetLessonsByLevelHandler(ILeccionQueryRepository repository) => _repository = repository;
-
-    public async Task<IReadOnlyList<LessonDto>> Handle(GetLessonsByLevelQuery request, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<LessonDto>>> Handle(GetLessonsByLevelQuery query, CancellationToken ct)
     {
-        var lessons = await _repository.ObtenerPorNivelAsync(request.Nivel, cancellationToken);
-        return lessons.Adapt<IReadOnlyList<LessonDto>>();
+        var user = await users.ObtenerPorIdAsync(query.UserId, ct);
+        if (user is null || user.NivelActual == NivelIngles.SinAsignar ||
+            query.Level.HasValue && user.NivelActual != query.Level)
+            return WrongLevel;
+
+        var catalog = await lessons.ObtenerPorNivelAsync(user.NivelActual, ct);
+        return Result<IReadOnlyList<LessonDto>>.Success(catalog.Adapt<IReadOnlyList<LessonDto>>());
     }
-}
 
-public sealed class GetLessonByIdHandler : IRequestHandler<GetLessonByIdQuery, LessonDto?>
-{
-    private readonly ILeccionQueryRepository _repository;
-
-    public GetLessonByIdHandler(ILeccionQueryRepository repository) => _repository = repository;
-
-    public async Task<LessonDto?> Handle(GetLessonByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<LessonDto>> Handle(GetLessonByIdQuery query, CancellationToken ct)
     {
-        var lesson = await _repository.ObtenerPorIdAsync(request.Id, cancellationToken);
-        return lesson?.Adapt<LessonDto>();
+        var lesson = await lessons.ObtenerPorIdAsync(query.Id, ct);
+        if (lesson is null)
+            return MissingLesson;
+        var user = await users.ObtenerPorIdAsync(query.UserId, ct);
+        return user?.NivelActual == lesson.NivelRequerido
+            ? Result<LessonDto>.Success(lesson.Adapt<LessonDto>())
+            : WrongLevel;
     }
-}
 
-public sealed class GetExerciseByIdHandler : IRequestHandler<GetExerciseByIdQuery, ExerciseDetailDto?>
-{
-    private readonly ILeccionQueryRepository _repository;
-
-    public GetExerciseByIdHandler(ILeccionQueryRepository repository) => _repository = repository;
-
-    public async Task<ExerciseDetailDto?> Handle(GetExerciseByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<ExerciseDetailDto>> Handle(GetExerciseByIdQuery query, CancellationToken ct)
     {
-        var exercise = await _repository.ObtenerEjercicioPorIdAsync(request.Id, cancellationToken);
-        return exercise?.Adapt<ExerciseDetailDto>();
+        var exercise = await lessons.ObtenerEjercicioPorIdAsync(query.Id, ct);
+        if (exercise is null)
+            return Error.NotFound("Exercise.NotFound", "Ejercicio no encontrado.");
+
+        var lesson = await Handle(new GetLessonByIdQuery(query.UserId, exercise.LeccionId), ct);
+        return lesson.IsSuccess ? Result<ExerciseDetailDto>.Success(exercise.Adapt<ExerciseDetailDto>()) : lesson.Error;
     }
 }

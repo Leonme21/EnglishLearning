@@ -8,7 +8,7 @@ public sealed class GetLessonsByLevelQueryValidator : AbstractValidator<GetLesso
 {
     public GetLessonsByLevelQueryValidator()
     {
-        RuleFor(x => x.Nivel)
+        RuleFor(x => x.Level)
             .IsInEnum()
             .WithMessage("Nivel must be a valid English level");
     }

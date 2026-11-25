@@ -19,13 +19,18 @@ public sealed class RevokeTokenHandler : IRequestHandler<RevokeTokenCommand, Res
 
     public async Task<Result<bool>> Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
     {
-        var success = await _jwtTokenService.RevokeRefreshTokenAsync(request.RefreshToken, cancellationToken);
-        
-        if (!success)
-            return Result<bool>.Failure(Error.NotFound("Auth.RefreshTokenNotFound", "Refresh token no encontrado"));
+        var token = await _unitOfWork.RefreshTokensQuery.ObtenerPorTokenAsync(request.RefreshToken, cancellationToken);
+        if (token is null)
+            return Error.NotFound("Auth.RefreshTokenNotFound", "Refresh token no encontrado.");
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return await _unitOfWork.WithUserLockAsync<Result<bool>>(token.UsuarioId, async () =>
+        {
+            var success = await _jwtTokenService.RevokeRefreshTokenAsync(request.RefreshToken, cancellationToken);
+            if (!success)
+                return Error.NotFound("Auth.RefreshTokenNotFound", "Refresh token no encontrado.");
 
-        return Result<bool>.Success(true);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return true;
+        }, cancellationToken);
     }
 }

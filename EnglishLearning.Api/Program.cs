@@ -20,7 +20,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger"))
 {
     app.UseSwaggerDocumentation();
-    app.UseDeveloperExceptionPage();
 }
 
 app.UseCustomMiddleware();
@@ -59,3 +58,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public partial class Program { }

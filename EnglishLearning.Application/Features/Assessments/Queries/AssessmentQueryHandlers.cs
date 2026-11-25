@@ -24,78 +24,104 @@ public sealed class GetAssessmentQuestionsHandler : IRequestHandler<GetAssessmen
     }
 }
 
-public sealed class GetProgressReportHandler : IRequestHandler<GetProgressReportQuery, ProgressReportDto>
+public sealed class GetProgressReportHandler(
+    IUsuarioQueryRepository users,
+    IAssessmentQueryRepository assessments,
+    ILeccionQueryRepository lessons,
+    IRecommendationEngine recommendations) : IRequestHandler<GetProgressReportQuery, ProgressReportDto>
 {
-    private readonly IUsuarioQueryRepository _usuarioRepository;
-    private readonly IAssessmentQueryRepository _assessmentRepository;
-    private readonly IRecommendationEngine _recommendationEngine;
-
-    public GetProgressReportHandler(
-        IUsuarioQueryRepository usuarioRepository,
-        IAssessmentQueryRepository assessmentRepository,
-        IRecommendationEngine recommendationEngine)
+    public async Task<ProgressReportDto> Handle(GetProgressReportQuery request, CancellationToken ct)
     {
-        _usuarioRepository = usuarioRepository;
-        _assessmentRepository = assessmentRepository;
-        _recommendationEngine = recommendationEngine;
+        var user = await users.ObtenerPorIdAsync(request.UsuarioId, ct)
+            ?? throw new KeyNotFoundException("Usuario no encontrado.");
+        var answers = (await users.ObtenerRespuestasPorUsuarioAsync(user.Id, ct)).ToArray();
+        var practice = answers.Where(answer => answer.EjercicioId > 0).ToArray();
+        var questions = (await assessments.ObtenerPreguntasAsync(ct)).ToDictionary(q => -q.Id, q => q.Habilidad);
+        var diagnostic = answers.Where(answer => questions.ContainsKey(answer.EjercicioId))
+            .GroupBy(answer => questions[answer.EjercicioId])
+            .ToDictionary(group => group.Key.ToString(), group => ToMetric(group));
+
+        var levels = new List<LevelProgressDto>();
+        IReadOnlyList<Leccion> currentLessons = [];
+        foreach (var level in user.Progresos.Select(progress => progress.Nivel).Append(user.NivelActual).Distinct().Order())
+        {
+            if (level == NivelIngles.SinAsignar)
+                continue;
+
+            var catalog = (await lessons.ObtenerPorNivelAsync(level, ct)).ToArray();
+            var metrics = PracticeMetrics.ForLevel(catalog, practice);
+            levels.Add(new LevelProgressDto(level.ToString(), metrics.CompletionPercentage, metrics.CompletedLessons.Count, metrics.LessonCount));
+            if (level == user.NivelActual)
+                currentLessons = catalog;
+        }
+
+        var recentAssessment = await assessments.ObtenerUltimaEvaluacionAsync(user.Id, ct);
+        var scores = ReadSkillScores(recentAssessment);
+        var suggested = Suggest(currentLessons, practice, scores);
+        var advice = user.NivelActual == NivelIngles.SinAsignar
+            ? ["Completa el diagnóstico para ver recomendaciones."]
+            : recommendations.GenerateRecommendations(user.NivelActual, scores, 3);
+        return new ProgressReportDto(user.Id, user.NivelActual.ToString(), levels, diagnostic,
+            advice, ToMetric(practice), suggested);
     }
 
-    public async Task<ProgressReportDto> Handle(GetProgressReportQuery request, CancellationToken cancellationToken)
+    private static SkillMetricDto ToMetric(IEnumerable<RespuestaUsuario> answers)
     {
-        var usuario = await _usuarioRepository.ObtenerPorIdAsync(request.UsuarioId, cancellationToken);
-        if (usuario == null)
-            throw new KeyNotFoundException("Usuario no encontrado");
+        var rows = answers.ToArray();
+        var correct = rows.Count(answer => answer.EsCorrecta);
+        return new SkillMetricDto(correct, rows.Length, PracticeMetrics.Percent(correct, rows.Length));
+    }
 
-        var respuestas = await _usuarioRepository.ObtenerRespuestasPorUsuarioAsync(request.UsuarioId, cancellationToken);
-        var evaluacion = await _assessmentRepository.ObtenerUltimaEvaluacionAsync(request.UsuarioId, cancellationToken);
+    private static IReadOnlyDictionary<Habilidad, Percentage> ReadSkillScores(EvaluacionDiagnostica? assessment)
+    {
+        var scores = new Dictionary<Habilidad, Percentage>();
+        if (assessment is null)
+            return scores;
 
-        // Parse skill scores from last evaluation
-        var puntajesHab = new Dictionary<string, double>();
-        if (evaluacion != null)
+        try
         {
-            try
+            var source = JsonSerializer.Deserialize<Dictionary<string, double>>(assessment.PuntajesPorHabilidadJson);
+            foreach (var (name, score) in source ?? [])
             {
-                var parsed = JsonSerializer.Deserialize<Dictionary<string, double>>(evaluacion.PuntajesPorHabilidadJson);
-                if (parsed != null) puntajesHab = parsed;
+                if (Enum.TryParse<Habilidad>(name, out var skill) && Enum.IsDefined(skill) &&
+                    Percentage.Create(score) is { IsSuccess: true } value)
+                    scores[skill] = value.GetValueOrThrow();
             }
-            catch { }
         }
-
-        // Calculate metrics by skill based on diagnostic responses (negative EjercicioId)
-        var preguntas = (await _assessmentRepository.ObtenerPreguntasAsync(cancellationToken)).ToDictionary(p => p.Id);
-        var metricas = new Dictionary<string, SkillMetricDto>();
-
-        foreach (Habilidad h in Enum.GetValues<Habilidad>())
+        catch (JsonException)
         {
-            var ids = preguntas.Where(kv => kv.Value.Habilidad == h).Select(kv => kv.Key).ToHashSet();
-            var deHabilidad = respuestas.Where(r => r.EjercicioId < 0 && ids.Contains(-r.EjercicioId)).ToList();
-            var aciertos = deHabilidad.Count(x => x.EsCorrecta);
-            var total = deHabilidad.Count;
-            metricas[h.ToString()] = new SkillMetricDto(aciertos, total, total == 0 ? 0 : Math.Round((double)aciertos / total * 100, 1));
+            // Older records without readable scores can still show practice progress.
         }
-
-        // Generate recommendations
-        var recomendaciones = new List<string>();
-        if (usuario.NivelActual != NivelIngles.SinAsignar)
-        {
-            var nivel = usuario.NivelActual;
-            var puntajesEnum = puntajesHab.ToDictionary(
-                kv => Enum.Parse<Habilidad>(kv.Key),
-                kv => Percentage.Create(kv.Value).Value);
-
-            var recommendations = _recommendationEngine.GenerateRecommendations(nivel, puntajesEnum, 3);
-            recomendaciones.AddRange(recommendations);
-        }
-        else
-        {
-            recomendaciones.Add("Completa el Placement Test para recibir plan personalizado.");
-        }
-
-        return new ProgressReportDto(
-            UsuarioId: request.UsuarioId,
-            NivelActual: usuario.NivelActual.ToString(),
-            Progresos: usuario.Progresos.Select(p => new LevelProgressDto(p.Nivel.ToString(), p.PorcentajeCompletado)).ToList(),
-            MetricasPorHabilidad: metricas,
-            Recomendaciones: recomendaciones);
+        return scores;
     }
+
+    private static PracticeRecommendationDto? Suggest(IReadOnlyList<Leccion> lessons,
+        IReadOnlyList<RespuestaUsuario> answers, IReadOnlyDictionary<Habilidad, Percentage> diagnostic)
+    {
+        if (lessons.Count == 0)
+            return null;
+
+        var exerciseTypes = lessons.SelectMany(l => l.Ejercicios).ToDictionary(e => e.Id, e => SkillOf(e.Tipo));
+        var scores = diagnostic.ToDictionary(pair => pair.Key, pair => pair.Value.Value);
+        foreach (var group in answers.Where(a => exerciseTypes.ContainsKey(a.EjercicioId)).GroupBy(a => exerciseTypes[a.EjercicioId]))
+            scores[group.Key] = ToMetric(group).Porcentaje;
+
+        if (scores.Count == 0)
+            return new PracticeRecommendationDto("Práctica general", "Explora tu catálogo", "/lessons");
+
+        var weakest = scores.OrderBy(pair => pair.Value).ThenBy(pair => pair.Key).First().Key;
+        var completed = PracticeMetrics.ForLevel(lessons, answers).CompletedLessons;
+        var lesson = lessons.Where(l => l.Ejercicios.Any(e => SkillOf(e.Tipo) == weakest))
+            .OrderBy(l => completed.Contains(l.Id)).ThenBy(l => l.Id).FirstOrDefault();
+        return lesson is null
+            ? new PracticeRecommendationDto(weakest.ToString(), "Practica con el tutor", "/chat")
+            : new PracticeRecommendationDto(weakest.ToString(), lesson.Titulo, $"/lessons/{lesson.Id}");
+    }
+
+    private static Habilidad SkillOf(TipoEjercicio type) => type switch
+    {
+        TipoEjercicio.Escucha => Habilidad.Listening,
+        TipoEjercicio.Escritura => Habilidad.Writing,
+        _ => Habilidad.Reading
+    };
 }

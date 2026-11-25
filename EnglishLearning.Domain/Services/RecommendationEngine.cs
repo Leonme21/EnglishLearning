@@ -47,12 +47,12 @@ public sealed class RecommendationEngine : IRecommendationEngine
 
     public string GenerateRecommendation(NivelIngles level, IReadOnlyDictionary<Habilidad, Percentage> scoresBySkill)
     {
+        if (scoresBySkill.Count == 0)
+            return $"Continúa practicando todas las habilidades para consolidar tu nivel {level}.";
+
         var weakestSkill = scoresBySkill
             .OrderBy(kvp => kvp.Value.Value)
             .FirstOrDefault();
-
-        if (weakestSkill.Key == default)
-            return $"Continúa practicando todas las habilidades para consolidar tu nivel {level}.";
 
         return GetRecommendationFor(level, weakestSkill.Key);
     }

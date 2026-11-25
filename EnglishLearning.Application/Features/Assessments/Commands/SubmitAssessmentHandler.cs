@@ -42,7 +42,10 @@ public sealed class SubmitAssessmentHandler : IRequestHandler<SubmitAssessmentCo
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<SubmitAssessmentResponse>> Handle(SubmitAssessmentCommand request, CancellationToken cancellationToken)
+    public Task<Result<SubmitAssessmentResponse>> Handle(SubmitAssessmentCommand request, CancellationToken cancellationToken) =>
+        _unitOfWork.WithUserLockAsync(request.UsuarioId, () => SubmitAsync(request, cancellationToken), cancellationToken);
+
+    private async Task<Result<SubmitAssessmentResponse>> SubmitAsync(SubmitAssessmentCommand request, CancellationToken cancellationToken)
     {
         var usuario = await _usuarioQueryRepository.ObtenerPorIdAsync(request.UsuarioId, cancellationToken);
         if (usuario == null)
@@ -62,15 +65,9 @@ public sealed class SubmitAssessmentHandler : IRequestHandler<SubmitAssessmentCo
         var preguntas = (await _assessmentQueryRepository.ObtenerPreguntasAsync(cancellationToken))
             .ToDictionary(p => p.Id);
 
-        // Validate all question IDs exist
-        foreach (var resp in request.Respuestas)
-        {
-            if (!preguntas.ContainsKey(resp.PreguntaId))
-            {
-                return Result<SubmitAssessmentResponse>.Failure(
-                    Error.NotFound("Question.NotFound", $"Pregunta {resp.PreguntaId} no existe"));
-            }
-        }
+        if (!preguntas.Keys.ToHashSet().SetEquals(request.Respuestas.Select(r => r.PreguntaId)) ||
+            !Enum.GetValues<Habilidad>().All(skill => preguntas.Values.Any(q => q.Habilidad == skill)))
+            return Error.Validation("Assessment.Incomplete", "El diagnóstico debe cubrir las cuatro habilidades con todas las preguntas asignadas.");
 
         int correctas = 0;
         var porHabilidad = new Dictionary<Habilidad, (int correctas, int total)>();
@@ -109,12 +106,11 @@ public sealed class SubmitAssessmentHandler : IRequestHandler<SubmitAssessmentCo
             if (respuesta.IsFailure)
                 return Result<SubmitAssessmentResponse>.Failure(respuesta.Error);
 
-            await _usuarioCommandRepository.GuardarRespuestaAsync(respuesta.Value, cancellationToken);
+            await _usuarioCommandRepository.GuardarRespuestaAsync(respuesta.GetValueOrThrow(), cancellationToken);
         }
 
-        // Calculate level
-        var nivelResult = _levelCalculator.TryCalculateFromPercentage(
-            (double)correctas / request.Respuestas.Count * 100);
+        var score = (int)Math.Round((double)correctas / request.Respuestas.Count * 100, MidpointRounding.AwayFromZero);
+        var nivelResult = _levelCalculator.TryCalculateFromPercentage(score);
 
         if (nivelResult.IsFailure)
             return Result<SubmitAssessmentResponse>.Failure(nivelResult.Error);
@@ -139,13 +135,13 @@ public sealed class SubmitAssessmentHandler : IRequestHandler<SubmitAssessmentCo
             usuarioId: request.UsuarioId,
             fecha: DateTime.UtcNow,
             nivelAsignado: nivel,
-            puntajeTotal: (int)Math.Round((double)correctas / request.Respuestas.Count * 100),
+            puntajeTotal: score,
             puntajesPorHabilidadJson: JsonSerializer.Serialize(puntajes));
 
         if (evaluacion.IsFailure)
             return Result<SubmitAssessmentResponse>.Failure(evaluacion.Error);
 
-        await _assessmentCommandRepository.GuardarEvaluacionAsync(evaluacion.Value, cancellationToken);
+        await _assessmentCommandRepository.GuardarEvaluacionAsync(evaluacion.GetValueOrThrow(), cancellationToken);
 
         // Persist responses, new level and evaluation atomically
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -155,9 +151,9 @@ public sealed class SubmitAssessmentHandler : IRequestHandler<SubmitAssessmentCo
 
         return Result<SubmitAssessmentResponse>.Success(new SubmitAssessmentResponse(
             NivelAsignado: nivel.ToString(),
-            PuntajeTotal: evaluacion.Value.PuntajeTotal,
+            PuntajeTotal: score,
             PuntajesPorHabilidad: puntajes,
-            Mensaje: $"Nivel asignado: {nivel} ({evaluacion.Value.PuntajeTotal}%).",
+            Mensaje: $"Nivel asignado: {nivel} ({score}%).",
             SiguienteRecomendacion: recomendacion));
     }
 }

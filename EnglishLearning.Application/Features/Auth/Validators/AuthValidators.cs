@@ -35,7 +35,7 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password es requerido")
             .MinimumLength(8).WithMessage("Password debe tener al menos 8 caracteres")
-            .MaximumLength(100).WithMessage("Password no puede exceder 100 caracteres")
+            .Must(p => p is not null && System.Text.Encoding.UTF8.GetByteCount(p) <= 72).WithMessage("La contraseña no puede exceder 72 bytes")
             .Matches("[A-Z]").WithMessage("Password debe contener al menos una mayúscula")
             .Matches("[a-z]").WithMessage("Password debe contener al menos una minúscula")
             .Matches("[0-9]").WithMessage("Password debe contener al menos un número")
@@ -113,51 +113,10 @@ public sealed class RevokeTokenRequestValidator : AbstractValidator<RevokeTokenR
     }
 }
 
-public sealed class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpCommand>
+public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
 {
-    public VerifyOtpCommandValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email es requerido")
-            .EmailAddress().WithMessage("Formato de email inválido");
-
-        RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("El código OTP es requerido")
-            .Length(6).WithMessage("El código OTP debe ser de 6 dígitos")
-            .Matches("^[0-9]{6}$").WithMessage("El código OTP debe contener únicamente dígitos");
-    }
-}
-
-public sealed class VerifyOtpRequestValidator : AbstractValidator<VerifyOtpRequest>
-{
-    public VerifyOtpRequestValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email es requerido")
-            .EmailAddress().WithMessage("Formato de email inválido");
-
-        RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("El código OTP es requerido")
-            .Length(6).WithMessage("El código OTP debe ser de 6 dígitos");
-    }
-}
-
-public sealed class ResendOtpCommandValidator : AbstractValidator<ResendOtpCommand>
-{
-    public ResendOtpCommandValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email es requerido")
-            .EmailAddress().WithMessage("Formato de email inválido");
-    }
-}
-
-public sealed class ResendOtpRequestValidator : AbstractValidator<ResendOtpRequest>
-{
-    public ResendOtpRequestValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email es requerido")
-            .EmailAddress().WithMessage("Formato de email inválido");
-    }
+    public ResetPasswordCommandValidator() =>
+        RuleFor(x => x.Password).NotEmpty().MinimumLength(8)
+            .Must(p => p is not null && System.Text.Encoding.UTF8.GetByteCount(p) <= 72)
+            .Matches("[A-Z]").Matches("[a-z]").Matches("[0-9]").Matches("[^a-zA-Z0-9]");
 }

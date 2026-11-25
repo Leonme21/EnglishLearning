@@ -11,15 +11,6 @@
     <div class="lessons-container">
         <h1 class="mb-4">Catálogo de Lecciones</h1>
         
-        <div class="tabs mb-4">
-            @foreach (var level in _levels)
-            {
-                <button class="tab-btn @(level == _activeLevel ? "active" : "")" @onclick="() => SelectLevel(level)">
-                    @level
-                </button>
-            }
-        </div>
-
         @if (_isLoading)
         {
             <div class="text-center py-5"><span class="spinner-small" style="width:3rem;height:3rem;border-width:4px;"></span></div>
@@ -55,32 +46,6 @@
 </RequirePlacement>
 
 <style>
-.tabs {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-}
-.tab-btn {
-    background: var(--surface-color);
-    border: 1px solid var(--surface-border);
-    color: var(--text-muted);
-    padding: 0.5rem 1.5rem;
-    border-radius: 2rem;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all var(--transition-fast);
-    flex-shrink: 0;
-}
-.tab-btn:hover {
-    background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
-    color: var(--text-main);
-}
-.tab-btn.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
 .lessons-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -104,32 +69,16 @@
 
 @code {
     private bool _isLoading = true;
-    private string _activeLevel = "A1";
-    private readonly string[] _levels = new[] { "A1", "A2", "B1", "B2", "C1" };
     private List<LessonDto> _lessons = new();
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (Session.NivelActual != "SinAsignar" && _levels.Contains(Session.NivelActual))
-        {
-            _activeLevel = Session.NivelActual;
-        }
-        await LoadLessons();
-    }
-
-    private async Task SelectLevel(string level)
-    {
-        if (_activeLevel == level) return;
-        _activeLevel = level;
-        await LoadLessons();
-    }
+    protected override Task OnInitializedAsync() => LoadLessons();
 
     private async Task LoadLessons()
     {
         _isLoading = true;
         StateHasChanged();
         
-        var res = await LessonService.GetLessonsByLevelAsync(_activeLevel);
+        var res = await LessonService.GetLessonsAsync();
         if (res.IsSuccess && res.Data != null)
         {
             _lessons = res.Data;

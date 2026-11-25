@@ -14,32 +14,21 @@ public sealed class SeedDataService : ISeedDataService
 {
     private readonly EnglishLearningDbContext _context;
     private readonly SeedDataOptions _options;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly ILogger<SeedDataService> _logger;
 
     public SeedDataService(
         EnglishLearningDbContext context,
-        IOptions<SeedDataOptions> options,
-        IPasswordHasher passwordHasher,
-        ILogger<SeedDataService> logger)
+        IOptions<SeedDataOptions> options)
     {
         _context = context;
         _options = options.Value;
-        _passwordHasher = passwordHasher;
-        _logger = logger;
     }
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         if (!_options.AutoSeedOnStartup) return;
 
-        // Purge demo user if exists in DB
-        var demoUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == "demo@demo.com", cancellationToken);
-        if (demoUser != null)
-        {
-            _context.Usuarios.Remove(demoUser);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        await _context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(271817)", cancellationToken);
 
         // Seed diagnostic questions
         if (!await _context.PreguntasDiagnosticas.AnyAsync(cancellationToken))
@@ -56,7 +45,7 @@ public sealed class SeedDataService : ISeedDataService
                         var pregunta = PreguntaDiagnostica.Create(
                             q.Id, q.Habilidad, q.Contenido, q.OpcionesJson, q.RespuestaCorrecta, q.Nivel);
                         if (pregunta.IsSuccess)
-                            _context.PreguntasDiagnosticas.Add(pregunta.Value);
+                            _context.PreguntasDiagnosticas.Add(pregunta.GetValueOrThrow());
                     }
                     await _context.SaveChangesAsync(cancellationToken);
                 }
@@ -65,6 +54,8 @@ public sealed class SeedDataService : ISeedDataService
             {
                 await SeedDefaultQuestionsAsync(cancellationToken);
             }
+
+            await AlignQuestionSequenceAsync(cancellationToken);
         }
 
         // Seed lessons + exercises
@@ -74,32 +65,27 @@ public sealed class SeedDataService : ISeedDataService
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        await SyncIdentitySequencesAsync(cancellationToken);
+        await AddPracticeExercisesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
-    /// <summary>
-    /// Rows seeded with explicit Ids don't advance PostgreSQL identity sequences,
-    /// which makes the next generated Id collide with an existing PK. Realign them.
-    /// </summary>
-    private async Task SyncIdentitySequencesAsync(CancellationToken cancellationToken)
+    private async Task AddPracticeExercisesAsync(CancellationToken ct)
     {
-        if (!_context.Database.IsNpgsql()) return;
-
-        string[] tables = { "Usuarios", "PreguntasDiagnosticas", "Lecciones", "Ejercicios" };
-        foreach (var table in tables)
+        var lessons = await _context.Lecciones.Include(l => l.Ejercicios).ToListAsync(ct);
+        foreach (var lesson in lessons)
         {
-            try
-            {
-                var sql = $"SELECT setval(pg_get_serial_sequence('\"{table}\"', 'Id'), " +
-                          $"GREATEST((SELECT COALESCE(MAX(\"Id\"), 0) FROM \"{table}\"), 1));";
-                await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "No se pudo sincronizar la secuencia para la tabla {Table}. Continuando ejecución.", table);
-            }
+            var additional = LessonSeedData.AdditionalPractice(lesson);
+            if (additional is not null && lesson.Ejercicios.All(e => e.Contenido != additional.Contenido))
+                _context.Ejercicios.Add(additional);
         }
+        await _context.SaveChangesAsync(ct);
     }
+
+    private Task AlignQuestionSequenceAsync(CancellationToken ct) =>
+        _context.Database.ExecuteSqlRawAsync("""
+            SELECT setval(pg_get_serial_sequence('"PreguntasDiagnosticas"', 'Id'),
+                          GREATEST((SELECT COALESCE(MAX("Id"), 0) FROM "PreguntasDiagnosticas"), 1));
+            """, ct);
 
     private async Task SeedDefaultQuestionsAsync(CancellationToken cancellationToken)
     {

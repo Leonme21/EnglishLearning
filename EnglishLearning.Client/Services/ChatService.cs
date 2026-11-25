@@ -12,8 +12,11 @@ public class ChatService
         _apiClient = apiClient;
     }
 
-    public async Task<ApiResult<ChatResponse>> SendMessageAsync(string message)
+    public async Task<ApiResult<ChatResponse>> SendMessageAsync(string message, IReadOnlyList<TutorTurn> history)
     {
-        return await _apiClient.PostAsync<ChatResponse>("api/v1/chat/ask", new ChatRequest(message));
+        return await _apiClient.PostAsync<ChatResponse>("api/v1/chat/ask", new ChatRequest(message, history));
     }
+
+    public Task<ApiResult<TutorRubric>> GetProductionFeedbackAsync(ProductionFeedbackRequest request) =>
+        _apiClient.PostAsync<TutorRubric>("api/v1/chat/production-feedback", request);
 }

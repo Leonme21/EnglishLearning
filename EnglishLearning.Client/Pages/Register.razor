@@ -12,6 +12,16 @@
         <h2 class="text-center">Crea tu cuenta</h2>
         <p class="text-center text-muted mb-4">Empieza tu camino a la fluidez en inglés</p>
 
+        @if (_challengeId is not null)
+        {
+            <p>@_message</p>
+            <label for="register-code">Código de seis dígitos</label>
+            <input id="register-code" class="form-control" maxlength="6" inputmode="numeric" autocomplete="one-time-code" @bind="_code" />
+            <button class="btn btn-primary mt-3" disabled="@(_isLoading || _code.Length != 6)" @onclick="Verify">Verificar correo</button>
+            <button class="btn btn-secondary mt-3" disabled="@_isLoading" @onclick="Resend">Reenviar código</button>
+        }
+        else
+        {
         <EditForm Model="@_registerModel" OnValidSubmit="HandleRegister">
             <DataAnnotationsValidator />
             
@@ -41,6 +51,7 @@
                 @if (_isLoading) { <span class="spinner-small"></span> } else { <span>Registrarse</span> }
             </button>
         </EditForm>
+        }
 
         <p class="auth-footer text-center mt-4">
             ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
@@ -67,6 +78,9 @@
     private RegisterForm _registerModel = new();
     private bool _isLoading = false;
     private int _passwordStrength = 0;
+    private string? _challengeId;
+    private string _code = "";
+    private string? _message;
 
     private async Task HandleRegister()
     {
@@ -75,14 +89,35 @@
         var result = await AuthService.RegisterAsync(req);
         _isLoading = false;
 
-        if (result.IsSuccess)
+        if (result.IsSuccess && result.Data?.ChallengeId is { } id)
         {
-            Navigation.NavigateTo("/placement");
+            _challengeId = id;
+            _message = result.Data.Message;
+            _registerModel.Password = "";
         }
         else
         {
             ToastService.ShowError(result.Error?.Message ?? "Error al registrarse");
         }
+    }
+
+    private async Task Verify()
+    {
+        _isLoading = true;
+        var result = await AuthService.VerifyOtpAsync(new(_challengeId!, _code));
+        _isLoading = false;
+        if (result.IsSuccess)
+            Navigation.NavigateTo("/placement");
+        else
+            ToastService.ShowError(result.Error?.Message ?? "No se pudo verificar el correo.");
+    }
+
+    private async Task Resend()
+    {
+        _isLoading = true;
+        var result = await AuthService.ResendOtpAsync(new(_challengeId!));
+        _isLoading = false;
+        _message = result.IsSuccess ? "Solicitaste un código nuevo." : result.Error?.Message;
     }
 
     private void EvaluatePassword(ChangeEventArgs e)

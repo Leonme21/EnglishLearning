@@ -17,7 +17,7 @@ namespace EnglishLearning.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -35,6 +35,10 @@ namespace EnglishLearning.Infrastructure.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
 
+                    b.Property<string>("EstrategiaEvaluacion")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<int>("LeccionId")
                         .HasColumnType("integer");
 
@@ -51,7 +55,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("LeccionId");
 
-                    b.ToTable("Ejercicios", (string)null);
+                    b.ToTable("Ejercicios");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.EvaluacionDiagnostica", b =>
@@ -85,7 +89,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("EvaluacionesDiagnosticas", (string)null);
+                    b.ToTable("EvaluacionesDiagnosticas");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.Leccion", b =>
@@ -114,7 +118,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("NivelRequerido");
 
-                    b.ToTable("Lecciones", (string)null);
+                    b.ToTable("Lecciones");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.PreguntaDiagnostica", b =>
@@ -153,7 +157,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("Nivel");
 
-                    b.ToTable("PreguntasDiagnosticas", (string)null);
+                    b.ToTable("PreguntasDiagnosticas");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.ProgresoNivel", b =>
@@ -182,7 +186,7 @@ namespace EnglishLearning.Infrastructure.Migrations
                     b.HasIndex("UsuarioId", "Nivel")
                         .IsUnique();
 
-                    b.ToTable("ProgresosNiveles", (string)null);
+                    b.ToTable("ProgresosNiveles");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.RefreshToken", b =>
@@ -226,7 +230,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.RespuestaUsuario", b =>
@@ -262,7 +266,7 @@ namespace EnglishLearning.Infrastructure.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("RespuestasUsuarios", (string)null);
+                    b.ToTable("RespuestasUsuarios");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.Usuario", b =>
@@ -287,6 +291,9 @@ namespace EnglishLearning.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -304,7 +311,7 @@ namespace EnglishLearning.Infrastructure.Migrations
                     b.HasIndex("Correo")
                         .IsUnique();
 
-                    b.ToTable("Usuarios", (string)null);
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("EnglishLearning.Domain.Entities.Ejercicio", b =>

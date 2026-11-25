@@ -274,7 +274,7 @@
         }
         else
         {
-            ToastService.ShowError("Error al evaluar respuesta");
+            ToastService.ShowError(res.Error?.Message ?? "Error al evaluar respuesta");
         }
     }
 

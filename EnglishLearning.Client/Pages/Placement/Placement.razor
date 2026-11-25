@@ -28,7 +28,7 @@
             <div class="result-header text-center">
                 <h2>¡Evaluación Completada!</h2>
                 <div class="level-badge">@_result.NivelAsignado</div>
-                <p class="text-muted">Puntaje total: @_result.PuntajeTotal / @(_questions.Count * 10)</p>
+                <p class="text-muted">Puntaje total: @_result.PuntajeTotal %</p>
             </div>
             
             <div class="skills-grid mt-4">
@@ -52,6 +52,7 @@
                 <p class="text-muted text-sm mt-2">@_result.Mensaje</p>
             </div>
 
+            <a class="btn btn-secondary w-100 mt-4" href="/placement/production">Practicar producción oral y escrita</a>
             <button class="btn btn-primary w-100 mt-4" @onclick="GoToDashboard">Ir a mi Dashboard</button>
         </div>
     }
@@ -259,6 +260,7 @@
     private bool _isLoading = true;
     private bool _isSubmitting = false;
     private List<DiagnosticQuestion> _questions = new();
+    private string _attempt = "";
     private int _currentIndex = 0;
     private Dictionary<int, string> _respuestas = new();
     private SubmitAssessmentResponse? _result;
@@ -277,7 +279,8 @@
         var result = await AssessmentService.GetQuestionsAsync();
         if (result.IsSuccess && result.Data != null)
         {
-            _questions = result.Data;
+            _questions = result.Data.Questions;
+            _attempt = result.Data.Attempt;
         }
         else
         {
@@ -306,7 +309,7 @@
         _isSubmitting = true;
         var answers = _respuestas.Select(kv => new SubmitAnswer(kv.Key, kv.Value)).ToList();
         
-        var req = new SubmitAssessmentRequest(Session.UsuarioId, answers);
+        var req = new SubmitAssessmentRequest(_attempt, answers);
         var result = await AssessmentService.SubmitAsync(req);
         _isSubmitting = false;
 

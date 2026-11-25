@@ -12,9 +12,9 @@ public class LessonService
         _apiClient = apiClient;
     }
 
-    public Task<ApiResult<List<LessonDto>>> GetLessonsByLevelAsync(string nivel)
+    public Task<ApiResult<List<LessonDto>>> GetLessonsAsync()
     {
-        return _apiClient.GetAsync<List<LessonDto>>($"api/v1/lessons/by-level/{nivel}");
+        return _apiClient.GetAsync<List<LessonDto>>("api/v1/lessons");
     }
 
     public Task<ApiResult<LessonDto>> GetLessonByIdAsync(int id)

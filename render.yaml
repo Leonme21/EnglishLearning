@@ -20,3 +20,7 @@ services:
         generateValue: true
       - key: Gemini__ApiKey
         sync: false
+      - key: Brevo__ApiKey
+        sync: false
+      - key: Brevo__FromEmail
+        sync: false

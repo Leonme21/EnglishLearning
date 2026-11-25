@@ -13,6 +13,8 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     IRefreshTokenQueryRepository RefreshTokensQuery { get; }
     IRefreshTokenCommandRepository RefreshTokensCommand { get; }
 
+    Task<T> WithUserLockAsync<T>(int userId, Func<Task<T>> operation, CancellationToken cancellationToken = default);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task CommitTransactionAsync(CancellationToken cancellationToken = default);
