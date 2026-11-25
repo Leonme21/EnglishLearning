@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using EnglishLearning.Application.Features.Assessments.DTOs;
 
 namespace EnglishLearning.Application.Features.Users.DTOs;
 
@@ -14,7 +15,8 @@ public sealed record UserProfileDto(
     string Nombre,
     string Correo,
     string NivelActual,
-    IReadOnlyList<LevelProgressDto> Progresos
+    IReadOnlyList<LevelProgressDto> Progresos,
+    SkillMetricDto Practice
 );
 
 public sealed record LevelProgressDto(

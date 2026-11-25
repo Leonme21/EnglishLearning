@@ -28,25 +28,25 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
     public async Task<Result<AuthResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        // Validate refresh token
-        var isValid = await _jwtTokenService.ValidateRefreshTokenAsync(request.RefreshToken, cancellationToken);
-        if (!isValid)
-            return Result<AuthResponse>.Failure(Error.Unauthorized("Auth.InvalidRefreshToken", "Refresh token inválido o expirado"));
-
-        // Get the stored token to get user ID
         var storedToken = await _refreshTokenQueryRepository.ObtenerPorTokenAsync(request.RefreshToken, cancellationToken);
-        if (storedToken == null)
-            return Result<AuthResponse>.Failure(Error.Unauthorized("Auth.InvalidRefreshToken", "Refresh token no encontrado"));
+        if (storedToken is null)
+            return Error.Unauthorized("Auth.InvalidRefreshToken", "Refresh token inválido o expirado.");
 
+        return await _unitOfWork.WithUserLockAsync(storedToken.UsuarioId,
+            () => RotateAsync(request.RefreshToken, storedToken.UsuarioId, cancellationToken), cancellationToken);
+    }
+
+    private async Task<Result<AuthResponse>> RotateAsync(string refreshToken, int userId, CancellationToken cancellationToken)
+    {
         // Rotate refresh token
-        var newRefreshToken = await _jwtTokenService.RotateRefreshTokenAsync(request.RefreshToken, cancellationToken);
+        var newRefreshToken = await _jwtTokenService.RotateRefreshTokenAsync(refreshToken, cancellationToken);
         if (newRefreshToken == null)
             return Result<AuthResponse>.Failure(Error.Unauthorized("Auth.InvalidRefreshToken", "No se pudo rotar el refresh token"));
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Get user
-        var usuario = await _usuarioQueryRepository.ObtenerPorIdAsync(storedToken.UsuarioId, cancellationToken);
+        var usuario = await _usuarioQueryRepository.ObtenerPorIdAsync(userId, cancellationToken);
         if (usuario == null)
             return Result<AuthResponse>.Failure(Error.NotFound("User.NotFound", "Usuario no encontrado"));
 
@@ -57,7 +57,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             Success: true,
             AccessToken: accessToken,
             RefreshToken: newRefreshToken,
-            ExpiresAt: DateTime.UtcNow.AddMinutes(15),
+            ExpiresAt: null,
             ErrorMessage: null,
             User: new UserDto(usuario.Id, usuario.Nombre, usuario.Correo, usuario.NivelActual.ToString())
         );

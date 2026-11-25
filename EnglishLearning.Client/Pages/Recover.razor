@@ -1,0 +1,57 @@
+@page "/recover"
+@layout PublicLayout
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+<PageTitle>Recuperar contraseña</PageTitle>
+<div class="auth-container">
+    <div class="glass-panel auth-card">
+        <h1>Recuperar contraseña</h1>
+        @if (_challenge is null)
+        {
+            <label for="recover-email">Correo electrónico</label>
+            <input id="recover-email" type="email" autocomplete="email" class="form-control" @bind="_email" />
+            <button class="btn btn-primary mt-3" disabled="@(_busy || string.IsNullOrWhiteSpace(_email))" @onclick="RequestCode">Solicitar código</button>
+        }
+        else
+        {
+            <label for="recover-code">Código de seis dígitos</label>
+            <input id="recover-code" class="form-control" inputmode="numeric" autocomplete="one-time-code" maxlength="6" @bind="_code" />
+            <label for="recover-password">Nueva contraseña</label>
+            <input id="recover-password" class="form-control" type="password" autocomplete="new-password" @bind="_password" />
+            <small>Usa al menos 8 caracteres, con mayúscula, minúscula, número y símbolo.</small>
+            <button class="btn btn-primary mt-3" disabled="@(_busy || _code.Length != 6 || _password.Length < 8)" @onclick="Reset">Cambiar contraseña</button>
+        }
+        <p role="status">@_message</p>
+        <a href="/login">Volver al inicio de sesión</a>
+    </div>
+</div>
+
+@code {
+    private string _email = "";
+    private string _code = "";
+    private string _password = "";
+    private string? _challenge;
+    private string? _message;
+    private bool _busy;
+
+    private async Task RequestCode()
+    {
+        _busy = true;
+        var result = await Auth.RequestPasswordResetAsync(_email);
+        _busy = false;
+        _challenge = result.Data?.ChallengeId;
+        _message = result.Data?.Message ?? result.Error?.Message;
+    }
+
+    private async Task Reset()
+    {
+        _busy = true;
+        var result = await Auth.ResetPasswordAsync(_challenge!, _code, _password);
+        _busy = false;
+        if (result.IsSuccess)
+            Navigation.NavigateTo("/login");
+        else
+            _message = result.Error?.Message ?? "No se pudo cambiar la contraseña.";
+    }
+}

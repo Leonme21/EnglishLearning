@@ -16,6 +16,7 @@
 
             <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
+                <p><a href="/recover">Olvidé mi contraseña</a></p>
                 
                 <div class="form-group">
                     <label for="email">Correo electrónico</label>
@@ -143,6 +144,7 @@
     private LoginForm _loginModel = new();
     private LoginStep _currentStep = LoginStep.Credentials;
     private string _pendingEmail = "";
+    private string _challengeId = "";
     private string _otpCode = "";
     private string _serverMessage = "";
     private bool _isLoading = false;
@@ -160,9 +162,10 @@
 
         if (result.IsSuccess)
         {
-            if (result.Data?.RequiresOtp == true)
+            if (result.Data is { RequiresOtp: true, ChallengeId: not null })
             {
-                _pendingEmail = result.Data.Email ?? _loginModel.Email.Trim();
+                _pendingEmail = _loginModel.Email.Trim();
+                _challengeId = result.Data.ChallengeId;
                 _serverMessage = result.Data.Message ?? "";
                 _otpCode = "";
                 _currentStep = LoginStep.OtpVerification;
@@ -189,7 +192,7 @@
         }
 
         _isVerifying = true;
-        var req = new VerifyOtpRequest(_pendingEmail, _otpCode.Trim());
+        var req = new VerifyOtpRequest(_challengeId, _otpCode.Trim());
         var result = await AuthService.VerifyOtpAsync(req);
         _isVerifying = false;
 
@@ -207,7 +210,7 @@
     private async Task HandleResendOtp()
     {
         _isResending = true;
-        var req = new ResendOtpRequest(_pendingEmail);
+        var req = new ResendOtpRequest(_challengeId);
         var result = await AuthService.ResendOtpAsync(req);
         _isResending = false;
 

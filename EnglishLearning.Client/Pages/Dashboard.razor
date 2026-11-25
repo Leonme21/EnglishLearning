@@ -107,7 +107,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var res = await ProgressService.GetProgressAsync(Session.UsuarioId);
+        var res = await ProgressService.GetProgressAsync();
         if (res.IsSuccess)
         {
             _progress = res.Data;

@@ -9,6 +9,7 @@ public class Usuario : AggregateRoot
     public string Nombre { get; private set; } = null!;
     public string Correo { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
+    public DateTime? PasswordChangedAt { get; private set; }
     public string? RefreshToken { get; private set; }
     public DateTime? RefreshTokenExpiry { get; private set; }
     public NivelIngles NivelActual { get; private set; }
@@ -61,6 +62,7 @@ public class Usuario : AggregateRoot
         if (string.IsNullOrWhiteSpace(passwordHash))
             throw new ArgumentException("PasswordHash cannot be empty", nameof(passwordHash));
         PasswordHash = passwordHash;
+        PasswordChangedAt = DateTime.UtcNow;
     }
 
     public void ActualizarRefreshToken(string refreshToken, DateTime expiry)
@@ -136,6 +138,7 @@ public class Ejercicio : Entity
     public string Contenido { get; private set; } = null!;
     public string RespuestaCorrecta { get; private set; } = null!;
     public TipoEjercicio Tipo { get; private set; }
+    public string? EstrategiaEvaluacion { get; private set; }
     public Leccion? Leccion { get; private set; }
 
     private Ejercicio() { } // EF Core
@@ -157,6 +160,8 @@ public class Ejercicio : Entity
 
         return new Ejercicio(id, leccionId, contenido.Trim(), respuestaCorrecta.Trim(), tipo);
     }
+
+    public void ConfigurarEvaluacion(string estrategia) => EstrategiaEvaluacion = estrategia;
 
     public void ActualizarContenido(string contenido, string respuestaCorrecta)
     {

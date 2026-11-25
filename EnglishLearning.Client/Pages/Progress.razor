@@ -18,9 +18,18 @@
         }
         else if (_progress != null)
         {
+            <section class="glass-panel metric-card mb-4">
+                <h2>Avance de la práctica</h2>
+                <p><a href="/placement/production">Practicar producción oral y escrita</a></p>
+                <p>@_progress.Practice.Total intentos · @_progress.Practice.Porcentaje.ToString("0.0") % de aciertos</p>
+                @foreach (var level in _progress.Progresos)
+                {
+                    <p>@level.Nivel · @level.LeccionesCompletadas de @level.TotalLecciones lecciones completadas (@level.PorcentajeCompletado.ToString("0") %)</p>
+                }
+            </section>
             <div class="progress-grid">
                 <div class="glass-panel metric-card">
-                    <h2>Desempeño por Habilidad</h2>
+                    <h2>Resultados del diagnóstico por habilidad</h2>
                     <div class="skills-chart mt-4">
                         @foreach (var skill in _progress.MetricasPorHabilidad)
                         {
@@ -43,6 +52,10 @@
 
                 <div class="glass-panel rec-card">
                     <h2>Recomendaciones para ti</h2>
+                    @if (_progress.SuggestedPractice is { } recommendation)
+                    {
+                        <p><a href="@recommendation.Ruta">@recommendation.Titulo</a> · @recommendation.Habilidad</p>
+                    }
                     <ul class="rec-list mt-4">
                         @foreach (var rec in _progress.Recomendaciones)
                         {
@@ -95,7 +108,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var res = await ProgressService.GetProgressAsync(Session.UsuarioId);
+        var res = await ProgressService.GetProgressAsync();
         if (res.IsSuccess)
         {
             _progress = res.Data;

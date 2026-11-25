@@ -1,0 +1,130 @@
+@page "/placement/production"
+@attribute [Authorize]
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ChatService Tutor
+
+<PageTitle>Producción oral y escrita</PageTitle>
+
+<section class="glass-panel p-4">
+    <h1>Producción oral y escrita</h1>
+    <p>En inglés, describe una decisión reciente, explica por qué la tomaste y qué aprendiste.</p>
+    <p>La retroalimentación es formativa. El resultado de esta actividad no cambia tu nivel.</p>
+    <label>
+        <input type="checkbox" @bind="_consent" disabled="@(_busy || _recording)" />
+        Autorizo enviar esta muestra escrita o grabada a Google Gemini para recibir retroalimentación.
+    </label>
+    <p class="text-muted">English Learning no guarda la grabación. Evita incluir información personal. <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Política de datos de Gemini</a>.</p>
+
+    <label for="production-writing" class="mt-3">Respuesta escrita</label>
+    <textarea id="production-writing" class="form-control" rows="5" maxlength="3000" @bind="_writing"></textarea>
+
+    <fieldset class="mt-3">
+        <legend>Respuesta oral</legend>
+        @if (_recording)
+        {
+            <button class="btn btn-secondary" @onclick="Stop">Detener grabación</button>
+            <span role="status">Grabando hasta 30 segundos.</span>
+        }
+        else
+        {
+            <button class="btn btn-secondary" disabled="@(!_consent || _busy)" @onclick="Start">Grabar hasta 30 segundos</button>
+            @if (_audio is not null)
+            {
+                <span>Grabación lista.</span>
+                <button class="btn btn-secondary" @onclick="ClearAudio" disabled="@_busy">Quitar grabación</button>
+            }
+        }
+        <p class="text-muted">Si el micrófono no está disponible, puedes enviar solo la respuesta escrita.</p>
+    </fieldset>
+    <button class="btn btn-primary mt-3" disabled="@(!_consent || _busy || _recording)" @onclick="Submit">Evaluar con el tutor</button>
+    <p class="mt-3" role="status">@_status</p>
+
+    @if (_feedback is not null)
+    {
+        <h2>Retroalimentación</h2>
+        <p>@_feedback.Overview</p>
+        <p>Escala de 1 a 4. Inicial, en desarrollo, adecuado y sólido.</p>
+        @foreach (var section in new[] { (Name: "Escritura", Criteria: _feedback.Writing), (Name: "Producción oral", Criteria: _feedback.Speaking) })
+        {
+            @if (section.Criteria.Count > 0)
+            {
+                <h3>@(section.Name)</h3>
+                <ul>
+                    @foreach (var criterion in section.Criteria)
+                    {
+                        <li><strong>@criterion.Name · @criterion.Score/4</strong> @criterion.Feedback</li>
+                    }
+                </ul>
+            }
+        }
+    }
+</section>
+
+@code {
+    private string? _writing;
+    private bool _consent;
+    private bool _busy;
+    private bool _recording;
+    private byte[]? _audio;
+    private IJSObjectReference? _recorder;
+    private TutorRubric? _feedback;
+    private string? _status;
+
+    private async Task Start()
+    {
+        try
+        {
+            _recorder ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/productionAudio.js");
+            await _recorder.InvokeVoidAsync("record");
+            _recording = true;
+            _status = null;
+        }
+        catch (JSException)
+        {
+            _status = "No pudimos acceder al micrófono. Puedes enviar la parte escrita.";
+        }
+    }
+
+    private async Task Stop()
+    {
+        try
+        {
+            _audio = await _recorder!.InvokeAsync<byte[]?>("stop");
+            _status = _audio is null ? "La grabación debe durar al menos un segundo." : null;
+        }
+        catch (JSException)
+        {
+            _audio = null;
+            _status = "No pudimos leer el audio. Puedes intentar otra vez o enviar la parte escrita.";
+        }
+        finally
+        {
+            _recording = false;
+        }
+    }
+
+    private void ClearAudio() => _audio = null;
+
+    private async Task Submit()
+    {
+        _busy = true;
+        _status = "Evaluando la muestra…";
+        var result = await Tutor.GetProductionFeedbackAsync(new(_consent, _writing,
+            _audio is null ? null : Convert.ToBase64String(_audio)));
+        _busy = false;
+        _feedback = result.Data;
+        if (result.IsSuccess)
+            _audio = null;
+        _status = result.IsSuccess ? "Evaluación recibida." : result.Error?.Message;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_recorder is not null)
+        {
+            try { await _recorder.InvokeVoidAsync("cancel"); }
+            finally { await _recorder.DisposeAsync(); }
+        }
+    }
+}

@@ -1,71 +1,44 @@
+using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using EnglishLearning.Client.Models;
 using EnglishLearning.Client.Services.Auth;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EnglishLearning.Client.Services.Api;
 
-public class AuthHeaderHandler : DelegatingHandler
+public sealed class AuthHeaderHandler(TokenStore tokens, SessionRefresh session) : DelegatingHandler
 {
-    private readonly TokenStore _tokenStore;
-    private readonly IServiceProvider _serviceProvider;
-    private bool _isRefreshing = false;
-
-    public AuthHeaderHandler(TokenStore tokenStore, IServiceProvider serviceProvider)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
-        _tokenStore = tokenStore;
-        _serviceProvider = serviceProvider;
-    }
+        var observedToken = await tokens.GetAccessTokenAsync();
+        if (string.IsNullOrWhiteSpace(observedToken))
+            return await base.SendAsync(request, ct);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var token = await _tokenStore.GetAccessTokenAsync();
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", observedToken);
+        var response = await base.SendAsync(request, ct);
+        if (response.StatusCode != HttpStatusCode.Unauthorized)
+            return response;
 
-        if (!string.IsNullOrWhiteSpace(token))
+        var access = await session.RenewAsync(observedToken, ct);
+        if (string.IsNullOrWhiteSpace(access))
+            return response;
+
+        using var retry = new HttpRequestMessage(request.Method, request.RequestUri)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            Version = request.Version,
+            VersionPolicy = request.VersionPolicy
+        };
+        foreach (var header in request.Headers)
+            retry.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        foreach (var option in request.Options)
+            retry.Options.Set(new HttpRequestOptionsKey<object?>(option.Key), option.Value);
+        if (request.Content is not null)
+        {
+            retry.Content = new ByteArrayContent(await request.Content.ReadAsByteArrayAsync(ct));
+            foreach (var header in request.Content.Headers)
+                retry.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        var response = await base.SendAsync(request, cancellationToken);
-
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && !string.IsNullOrWhiteSpace(token) && !_isRefreshing)
-        {
-            _isRefreshing = true;
-            try
-            {
-                var refreshToken = await _tokenStore.GetRefreshTokenAsync();
-                if (!string.IsNullOrWhiteSpace(refreshToken))
-                {
-                    var httpClientFactory = (IHttpClientFactory)_serviceProvider.GetService(typeof(IHttpClientFactory))!;
-                    var client = httpClientFactory.CreateClient("AuthClient");
-                    
-                    var refreshReq = new RefreshTokenRequest(token, refreshToken);
-                    var refreshResponse = await client.PostAsJsonAsync("api/v1/auth/refresh", refreshReq, cancellationToken);
-                    
-                    if (refreshResponse.IsSuccessStatusCode)
-                    {
-                        var result = await refreshResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>(cancellationToken: cancellationToken);
-                        if (result != null && result.Success && result.Data != null)
-                        {
-                            await _tokenStore.SetTokensAsync(result.Data.AccessToken, result.Data.RefreshToken);
-                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.Data.AccessToken);
-                            // Re-enviar la solicitud con el nuevo token
-                            return await base.SendAsync(request, cancellationToken);
-                        }
-                    }
-                }
-                
-                await _tokenStore.ClearTokensAsync();
-                var authStateProvider = (JwtAuthStateProvider)_serviceProvider.GetService(typeof(AuthenticationStateProvider))!;
-                authStateProvider.NotifyUserLogout();
-            }
-            finally
-            {
-                _isRefreshing = false;
-            }
-        }
-
-        return response;
+        retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access);
+        response.Dispose();
+        return await base.SendAsync(retry, ct);
     }
 }

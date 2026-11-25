@@ -1,102 +1,72 @@
-using EnglishLearning.Application.Features.Lessons.Commands;
 using EnglishLearning.Application.Features.Lessons.DTOs;
+using EnglishLearning.Application.Features.Lessons.Queries;
 using EnglishLearning.Domain.Common;
 using EnglishLearning.Domain.Entities;
 using EnglishLearning.Domain.Enums;
 using EnglishLearning.Domain.Interfaces;
+using EnglishLearning.Domain.Options;
 using EnglishLearning.Domain.Services;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace EnglishLearning.Application.Features.Lessons.Commands;
 
-public sealed class EvaluateExerciseHandler : IRequestHandler<EvaluateExerciseCommand, Result<EvaluateExerciseResponse>>
+public sealed class EvaluateExerciseHandler(
+    IUnitOfWork unitOfWork, IExerciseEvaluator evaluator, IOptions<LevelCalculationOptions> options)
+    : IRequestHandler<EvaluateExerciseCommand, Result<EvaluateExerciseResponse>>
 {
-    private readonly ILeccionQueryRepository _leccionRepository;
-    private readonly IUsuarioCommandRepository _usuarioCommandRepository;
-    private readonly IUsuarioQueryRepository _usuarioQueryRepository;
-    private readonly IExerciseEvaluator _exerciseEvaluator;
-    private readonly ILevelCalculator _levelCalculator;
-    private readonly IUnitOfWork _unitOfWork;
+    public Task<Result<EvaluateExerciseResponse>> Handle(EvaluateExerciseCommand request, CancellationToken ct) =>
+        unitOfWork.WithUserLockAsync(request.UsuarioId, () => EvaluateAsync(request, ct), ct);
 
-    public EvaluateExerciseHandler(
-        ILeccionQueryRepository leccionRepository,
-        IUsuarioCommandRepository usuarioCommandRepository,
-        IUsuarioQueryRepository usuarioQueryRepository,
-        IExerciseEvaluator exerciseEvaluator,
-        ILevelCalculator levelCalculator,
-        IUnitOfWork unitOfWork)
+    private async Task<Result<EvaluateExerciseResponse>> EvaluateAsync(EvaluateExerciseCommand request, CancellationToken ct)
     {
-        _leccionRepository = leccionRepository;
-        _usuarioCommandRepository = usuarioCommandRepository;
-        _usuarioQueryRepository = usuarioQueryRepository;
-        _exerciseEvaluator = exerciseEvaluator;
-        _levelCalculator = levelCalculator;
-        _unitOfWork = unitOfWork;
-    }
+        var user = await unitOfWork.UsuariosQuery.ObtenerPorIdAsync(request.UsuarioId, ct);
+        if (user is null || user.NivelActual == NivelIngles.SinAsignar)
+            return LessonQueries.WrongLevel;
 
-    public async Task<Result<EvaluateExerciseResponse>> Handle(EvaluateExerciseCommand request, CancellationToken cancellationToken)
-    {
-        // Get exercise
-        var exercise = await _leccionRepository.ObtenerEjercicioPorIdAsync(request.EjercicioId, cancellationToken);
-        if (exercise == null)
+        var exercise = await unitOfWork.LeccionesQuery.ObtenerEjercicioPorIdAsync(request.EjercicioId, ct);
+        if (exercise is null)
+            return Error.NotFound("Exercise.NotFound", "Ejercicio no encontrado.");
+
+        var lessons = (await unitOfWork.LeccionesQuery.ObtenerPorNivelAsync(user.NivelActual, ct)).ToArray();
+        if (lessons.All(l => l.Id != exercise.LeccionId))
+            return LessonQueries.WrongLevel;
+
+        var result = exercise.EstrategiaEvaluacion is { } strategy
+            ? evaluator.Evaluate(request.RespuestaTexto, exercise.RespuestaCorrecta, strategy)
+            : evaluator.Evaluate(request.RespuestaTexto, exercise.RespuestaCorrecta, exercise.Tipo);
+        if (result.IsFailure)
+            return result.Error;
+
+        var attempt = RespuestaUsuario.Create(0, user.Id, exercise.Id, request.RespuestaTexto, result.Value).GetValueOrThrow();
+        var history = (await unitOfWork.UsuariosQuery.ObtenerRespuestasPorUsuarioAsync(user.Id, ct)).Append(attempt).ToArray();
+        var practice = PracticeMetrics.ForLevel(lessons, history);
+
+        await unitOfWork.UsuariosCommand.GuardarRespuestaAsync(attempt, ct);
+        var progress = user.Progresos.SingleOrDefault(p => p.Nivel == user.NivelActual);
+        if (progress is null)
         {
-            return Result<EvaluateExerciseResponse>.Failure(
-                Error.NotFound("Exercise.NotFound", "Ejercicio no encontrado"));
+            await unitOfWork.UsuariosCommand.AgregarProgresoAsync(
+                ProgresoNivel.Create(0, user.Id, user.NivelActual, practice.CompletionPercentage).GetValueOrThrow(), ct);
+        }
+        else
+        {
+            progress.ActualizarPorcentaje(practice.CompletionPercentage);
+            await unitOfWork.UsuariosCommand.ActualizarProgresoAsync(progress, ct);
         }
 
-        // Evaluate answer
-        var evaluationResult = _exerciseEvaluator.Evaluate(
-            request.RespuestaTexto,
-            exercise.RespuestaCorrecta,
-            exercise.Tipo);
-
-        if (evaluationResult.IsFailure)
-            return Result<EvaluateExerciseResponse>.Failure(evaluationResult.Error);
-
-        var esCorrecta = evaluationResult.Value;
-        var mensaje = esCorrecta ? "¡Excelente trabajo!" : "Sigue practicando.";
-
-        // Save user response
-        var respuesta = RespuestaUsuario.Create(
-            id: 0, // Will be set by DB
-            usuarioId: request.UsuarioId,
-            ejercicioId: request.EjercicioId,
-            respuestaTexto: request.RespuestaTexto,
-            esCorrecta: esCorrecta,
-            fechaRealizacion: DateTime.UtcNow);
-
-        if (respuesta.IsFailure)
-            return Result<EvaluateExerciseResponse>.Failure(respuesta.Error);
-
-        await _usuarioCommandRepository.GuardarRespuestaAsync(respuesta.Value, cancellationToken);
-
-        // Persist now so the promotion window below includes this answer
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        // Check for level promotion
-        var respuestasRecientes = await _usuarioQueryRepository.ObtenerRespuestasRecientesAsync(request.UsuarioId, 10, cancellationToken);
-        var total = respuestasRecientes.Count();
-        var porcentajeAciertos = total > 0
-            ? (double)respuestasRecientes.Count(r => r.EsCorrecta) / total * 100
-            : 0;
-
-        string? nuevoNivel = null;
-        var usuario = await _usuarioQueryRepository.ObtenerPorIdAsync(request.UsuarioId, cancellationToken);
-
-        if (porcentajeAciertos >= 80 && total >= 10 && usuario != null && usuario.NivelActual < NivelIngles.C1)
+        var rules = options.Value.PromotionRules;
+        string? nextLevel = null;
+        var message = result.Value ? "¡Excelente trabajo!" : "Sigue practicando.";
+        if (practice.CanPromote(user.NivelActual, rules))
         {
-            var nivelSiguiente = (int)usuario.NivelActual + 1;
-            var nuevoNivelEnum = (NivelIngles)nivelSiguiente;
-
-            await _usuarioCommandRepository.ActualizarNivelAsync(request.UsuarioId, nuevoNivelEnum, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            nuevoNivel = nuevoNivelEnum.ToString();
-            mensaje += $" ¡Felicidades! Has subido al nivel {nuevoNivel}.";
+            var next = user.NivelActual + 1;
+            await unitOfWork.UsuariosCommand.ActualizarNivelAsync(user.Id, next, ct);
+            nextLevel = next.ToString();
+            message += $" ¡Felicidades! Has subido al nivel {nextLevel}.";
         }
 
-        return Result<EvaluateExerciseResponse>.Success(new EvaluateExerciseResponse(
-            EsCorrecta: esCorrecta,
-            Mensaje: mensaje,
-            NuevoNivel: nuevoNivel));
+        await unitOfWork.SaveChangesAsync(ct);
+        return new EvaluateExerciseResponse(result.Value, message, nextLevel);
     }
 }

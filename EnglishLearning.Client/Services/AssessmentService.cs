@@ -12,9 +12,9 @@ public class AssessmentService
         _apiClient = apiClient;
     }
 
-    public Task<ApiResult<List<DiagnosticQuestion>>> GetQuestionsAsync()
+    public Task<ApiResult<AssessmentSession>> GetQuestionsAsync()
     {
-        return _apiClient.GetAsync<List<DiagnosticQuestion>>("api/v1/assessments/questions");
+        return _apiClient.GetAsync<AssessmentSession>("api/v1/assessments/questions");
     }
 
     public Task<ApiResult<SubmitAssessmentResponse>> SubmitAsync(SubmitAssessmentRequest request)

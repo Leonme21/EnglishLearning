@@ -49,8 +49,18 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
         var normalizedUser = NormalizeInput(userAnswer);
         var normalizedCorrect = NormalizeInput(correctAnswer);
 
-        var isCorrect = strategy.Evaluate(normalizedUser, normalizedCorrect);
-        return isCorrect;
+        try
+        {
+            return strategy.Evaluate(normalizedUser, normalizedCorrect);
+        }
+        catch (ArgumentException) when (strategy is RegexStrategy)
+        {
+            return Error.Validation("ExerciseEvaluator.InvalidPattern", "El patrón de evaluación no es válido.");
+        }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+        {
+            return Error.Validation("ExerciseEvaluator.EvaluationTimeout", "El ejercicio no se pudo evaluar en el tiempo disponible.");
+        }
     }
 
     private static string NormalizeInput(string input)
@@ -116,18 +126,8 @@ public sealed class ExerciseEvaluator : IExerciseEvaluator
     {
         public string Name => "Regex";
 
-        public bool Evaluate(string userAnswer, string correctAnswer)
-        {
-            try
-            {
-                // Treat correctAnswer as regex pattern
-                return System.Text.RegularExpressions.Regex.IsMatch(userAnswer, correctAnswer, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            }
-            catch
-            {
-                // Fallback to exact match if regex is invalid
-                return string.Equals(userAnswer, correctAnswer, StringComparison.OrdinalIgnoreCase);
-            }
-        }
+        public bool Evaluate(string userAnswer, string correctAnswer) =>
+            System.Text.RegularExpressions.Regex.IsMatch(userAnswer, correctAnswer,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
     }
 }

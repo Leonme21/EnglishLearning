@@ -12,8 +12,8 @@ public class ProgressService
         _apiClient = apiClient;
     }
 
-    public Task<ApiResult<ProgressReportResponse>> GetProgressAsync(int usuarioId)
+    public Task<ApiResult<ProgressReportResponse>> GetProgressAsync()
     {
-        return _apiClient.GetAsync<ProgressReportResponse>($"api/v1/assessments/progress/{usuarioId}");
+        return _apiClient.GetAsync<ProgressReportResponse>("api/v1/progress");
     }
 }

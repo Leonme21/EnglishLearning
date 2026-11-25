@@ -1,3 +1,4 @@
+using EnglishLearning.Application.Features.Assessments.DTOs;
 using EnglishLearning.Application.Features.Users.DTOs;
 using EnglishLearning.Application.Features.Users.Queries;
 using EnglishLearning.Domain.Common;
@@ -43,12 +44,17 @@ public sealed class GetUserProfileHandler : IRequestHandler<GetUserProfileQuery,
         if (usuario == null)
             return Result<UserProfileDto>.Failure(Error.NotFound("User.NotFound", "Usuario no encontrado"));
 
+        var practice = (await _usuarioQueryRepository.ObtenerRespuestasPorUsuarioAsync(usuario.Id, cancellationToken))
+            .Where(answer => answer.EjercicioId > 0).ToArray();
+        var correct = practice.Count(answer => answer.EsCorrecta);
+
         var profile = new UserProfileDto(
             Id: usuario.Id,
             Nombre: usuario.Nombre,
             Correo: usuario.Correo,
             NivelActual: usuario.NivelActual.ToString(),
-            Progresos: usuario.Progresos.Select(p => new LevelProgressDto(p.Nivel.ToString(), p.PorcentajeCompletado)).ToList()
+            Progresos: usuario.Progresos.Select(p => new EnglishLearning.Application.Features.Users.DTOs.LevelProgressDto(p.Nivel.ToString(), p.PorcentajeCompletado)).ToList(),
+            Practice: new SkillMetricDto(correct, practice.Length, EnglishLearning.Domain.Services.PracticeMetrics.Percent(correct, practice.Length))
         );
 
         return Result<UserProfileDto>.Success(profile);

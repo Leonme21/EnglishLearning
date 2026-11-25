@@ -14,17 +14,36 @@ public class ApiClient
 
     public async Task<ApiResult<T>> GetAsync<T>(string url)
     {
-        var response = await _httpClient.GetAsync(url);
-        return await ProcessResponse<T>(response);
+        return await SendAsync<T>(() => _httpClient.GetAsync(url));
     }
 
     public async Task<ApiResult<T>> PostAsync<T>(string url, object? data)
     {
-        var response = await _httpClient.PostAsJsonAsync(url, data);
-        return await ProcessResponse<T>(response);
+        return await SendAsync<T>(() => _httpClient.PostAsJsonAsync(url, data));
     }
 
-    private async Task<ApiResult<T>> ProcessResponse<T>(HttpResponseMessage response)
+    private static async Task<ApiResult<T>> SendAsync<T>(Func<Task<HttpResponseMessage>> send)
+    {
+        try
+        {
+            using var response = await send();
+            return await ProcessResponse<T>(response);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiResult<T>.Failure(new ApiError("NetworkError", "No se pudo conectar con el servidor."));
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return ApiResult<T>.Failure(new ApiError("InvalidResponse", "La respuesta del servidor no es válida."));
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiResult<T>.Failure(new ApiError("Timeout", "El servidor tardó demasiado en responder."));
+        }
+    }
+
+    private static async Task<ApiResult<T>> ProcessResponse<T>(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {

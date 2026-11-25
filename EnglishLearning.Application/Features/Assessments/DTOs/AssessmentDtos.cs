@@ -11,8 +11,10 @@ public sealed record DiagnosticQuestionDto(
     string Nivel
 );
 
+public sealed record AssessmentSessionDto(string Attempt, IReadOnlyList<DiagnosticQuestionDto> Questions);
+
 public sealed record SubmitAssessmentRequest(
-    int? UsuarioId,
+    [Required][StringLength(4096)] string Attempt,
     [Required][MinLength(8)][MaxLength(20)] IReadOnlyList<SubmitAnswerDto> Respuestas
 );
 
@@ -34,12 +36,16 @@ public sealed record ProgressReportDto(
     string NivelActual,
     IReadOnlyList<LevelProgressDto> Progresos,
     IReadOnlyDictionary<string, SkillMetricDto> MetricasPorHabilidad,
-    IReadOnlyList<string> Recomendaciones
+    IReadOnlyList<string> Recomendaciones,
+    SkillMetricDto Practice,
+    PracticeRecommendationDto? SuggestedPractice
 );
 
 public sealed record LevelProgressDto(
     string Nivel,
-    double PorcentajeCompletado
+    double PorcentajeCompletado,
+    int LeccionesCompletadas,
+    int TotalLecciones
 );
 
 public sealed record SkillMetricDto(
@@ -47,3 +53,4 @@ public sealed record SkillMetricDto(
     int Total,
     double Porcentaje
 );
+public sealed record PracticeRecommendationDto(string Habilidad, string Titulo, string Ruta);

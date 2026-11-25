@@ -16,7 +16,8 @@ var apiUrl = !string.IsNullOrWhiteSpace(configuredUrl) && (builder.HostEnvironme
     : builder.HostEnvironment.BaseAddress;
 
 // Auth & Storage
-builder.Services.AddScoped<TokenStore>();
+builder.Services.AddSingleton<TokenStore>();
+builder.Services.AddSingleton<SessionRefresh>();
 builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthStateProvider>());
 builder.Services.AddAuthorizationCore();

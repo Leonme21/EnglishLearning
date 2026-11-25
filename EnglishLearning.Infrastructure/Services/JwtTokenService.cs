@@ -39,6 +39,7 @@ public sealed class JwtTokenService : IJwtTokenService
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim("nivel", nivelActual),
+            new Claim("session_at", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture)),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -69,7 +70,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
         await _refreshTokenCommandRepository.RevocarTodosPorUsuarioAsync(userId, cancellationToken);
 
-        var refreshToken = RefreshToken.Create(0, userId, token, expiry).Value;
+        var refreshToken = RefreshToken.Create(0, userId, token, expiry).GetValueOrThrow();
         await _refreshTokenCommandRepository.AgregarAsync(refreshToken, cancellationToken);
 
         await _usuarioCommandRepository.ActualizarRefreshTokenAsync(userId, token, expiry, cancellationToken);

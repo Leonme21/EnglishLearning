@@ -4,6 +4,7 @@ using EnglishLearning.Infrastructure.Repositories.Lessons;
 using EnglishLearning.Infrastructure.Repositories.Users;
 using EnglishLearning.Infrastructure.Repositories.Assessments;
 using EnglishLearning.Infrastructure.Repositories.Auth;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EnglishLearning.Infrastructure.UnitOfWork;
@@ -42,6 +43,15 @@ public sealed class UnitOfWork : IUnitOfWork
         AssessmentsCommand = assessmentCommandRepository;
         RefreshTokensQuery = refreshTokenQueryRepository;
         RefreshTokensCommand = refreshTokenCommandRepository;
+    }
+
+    public async Task<T> WithUserLockAsync<T>(int userId, Func<Task<T>> operation, CancellationToken ct = default)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({271816}, {userId})", ct);
+        var result = await operation();
+        await transaction.CommitAsync(ct);
+        return result;
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

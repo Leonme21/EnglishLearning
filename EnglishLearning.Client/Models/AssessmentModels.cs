@@ -4,7 +4,9 @@ namespace EnglishLearning.Client.Models;
 
 public record DiagnosticQuestion(int Id, string Habilidad, string Contenido, IReadOnlyList<string> Opciones, string Nivel);
 
-public record SubmitAssessmentRequest(int UsuarioId, List<SubmitAnswer> Respuestas);
+public record AssessmentSession(string Attempt, List<DiagnosticQuestion> Questions);
+
+public record SubmitAssessmentRequest(string Attempt, List<SubmitAnswer> Respuestas);
 
 public record SubmitAnswer(int PreguntaId, string RespuestaTexto);
 

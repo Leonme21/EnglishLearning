@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Claims;
+using EnglishLearning.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLearning.Api.Extensions;
 
@@ -68,6 +71,26 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var principal = context.Principal;
+                        if (!int.TryParse(principal?.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal?.FindFirstValue("sub"), out var userId))
+                        {
+                            context.Fail("Invalid session.");
+                            return;
+                        }
+
+                        var db = context.HttpContext.RequestServices.GetRequiredService<EnglishLearningDbContext>();
+                        var state = await db.Usuarios.AsNoTracking().Where(user => user.Id == userId)
+                            .Select(user => new { user.PasswordChangedAt }).SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+                        if (state is null || state.PasswordChangedAt is { } changedAt &&
+                            (!long.TryParse(principal?.FindFirstValue("session_at"), out var issuedAt) ||
+                             issuedAt < new DateTimeOffset(changedAt).ToUnixTimeMilliseconds()))
+                            context.Fail("Expired session.");
+                    }
+                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

@@ -21,6 +21,9 @@ public sealed class UsersController : BaseApiController
         if (CurrentUserId is null)
             return Unauthorized();
 
+        if (id.HasValue && id.Value != CurrentUserId.Value)
+            return Forbid();
+
         var query = new GetUserByIdQuery(CurrentUserId.Value);
         var result = await _mediator.Send(query, cancellationToken);
         return HandleResult(result);
@@ -32,6 +35,9 @@ public sealed class UsersController : BaseApiController
     {
         if (CurrentUserId is null)
             return Unauthorized();
+
+        if (id.HasValue && id.Value != CurrentUserId.Value)
+            return Forbid();
 
         var query = new GetUserProfileQuery(CurrentUserId.Value);
         var result = await _mediator.Send(query, cancellationToken);

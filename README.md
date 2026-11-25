@@ -1,14 +1,14 @@
 # English Learning Platform
 
-[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET 10 LTS](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.8_Flash-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
 [![Brevo](https://img.shields.io/badge/Brevo-Email_API-0092FF?logo=sendinblue&logoColor=white)](https://www.brevo.com/)
 [![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render&logoColor=black)](https://render.com/)
-[![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen?logo=xunit&logoColor=white)](https://xunit.net/)
+[![Build and test](https://github.com/Leonme21/EnglishLearning/actions/workflows/ci.yml/badge.svg)](https://github.com/Leonme21/EnglishLearning/actions/workflows/ci.yml)
 
-Plataforma full-stack de aprendizaje de inglés construida con **.NET 9**, **Blazor WebAssembly** y **PostgreSQL**. Permite a los estudiantes aprender inglés de forma progresiva a través de lecciones dinámicas adaptadas a su nivel CEFR, evaluaciones diagnósticas multifactoriales, reportes analíticos de evolución y un **Tutor de Inteligencia Artificial impulsado por Google Gemini** con síntesis de voz en tiempo real.
+Plataforma full-stack de aprendizaje de inglés construida con **.NET 10 LTS**, **Blazor WebAssembly** y **PostgreSQL**. Permite a los estudiantes aprender inglés de forma progresiva a través de lecciones dinámicas adaptadas a su nivel CEFR, evaluaciones diagnósticas multifactoriales, reportes analíticos de evolución y un **Tutor de Inteligencia Artificial impulsado por Google Gemini** con síntesis de voz en tiempo real.
 
 ---
 
@@ -29,16 +29,16 @@ Plataforma full-stack de aprendizaje de inglés construida con **.NET 9**, **Bla
 - [Stack Tecnológico](#stack-tecnológico)
 - [Dominio y Modelo de Datos](#dominio-y-modelo-de-datos)
 - [API — Catálogo Completo de Endpoints](#api--catálogo-completo-de-endpoints)
-- [Flujo de Autenticación y Seguridad OTP](#flujo-de-autenticación-y-seguridad-otp)
+- [Flujo de Autenticación y Seguridad OTP](#flujo-de-autenticación-y-otp)
 - [Sistema de Niveles CEFR y Evaluación](#sistema-de-niveles-cefr-y-evaluación)
-- [Tutor de Inteligencia Artificial (Google Gemini)](#tutor-de-inteligencia-artificial-google-gemini)
+- [Tutor de Inteligencia Artificial (Google Gemini)](#tutor-de-inteligencia-artificial)
 - [Servicio de Mensajería Transaccional (Brevo API)](#servicio-de-mensajería-transaccional-brevo-api)
 - [Ejemplos Prácticos de Consumo (cURL)](#ejemplos-prácticos-de-consumo-curl)
 - [Setup Local](#setup-local)
 - [Setup con Docker](#setup-con-docker)
 - [Configuración y Variables de Entorno](#configuración-y-variables-de-entorno)
 - [Migraciones y Seeding de EF Core](#migraciones-y-seeding-de-ef-core)
-- [Tests Unitarios y Cobertura](#tests-unitarios-y-cobertura)
+- [Pruebas automáticas](#pruebas-automáticas)
 - [Despliegue en Render](#despliegue-en-render)
 - [Preguntas Frecuentes y Troubleshooting](#preguntas-frecuentes-y-troubleshooting)
 - [Autor](#-autor)
@@ -96,14 +96,14 @@ El proyecto está diseñado bajo los principios de **Clean Architecture**, **Dom
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    EnglishLearning.Client                       │
-│           Blazor WebAssembly (SPA) — net9.0                     │
+│           Blazor WebAssembly (SPA) — net10.0                     │
 │  Pages: Landing · Login · Register · Dashboard · LessonsList    │
 │         LessonPlayer · Chat · Profile · Progress · Placement    │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ HTTP / JSON
 ┌───────────────────────────▼─────────────────────────────────────┐
 │                    EnglishLearning.Api                          │
-│         ASP.NET Core Web API — net9.0                           │
+│         ASP.NET Core Web API — net10.0                           │
 │  Controllers: Auth · Lessons · Assessments · Users · Progress   │
 │               Chat                                              │
 │  Middleware: ExceptionHandling · CorrelationId · SecurityHeaders│
@@ -233,9 +233,9 @@ EnglishLearning/
 ### Backend
 | Tecnología | Versión | Propósito |
 | :--- | :--- | :--- |
-| **.NET / ASP.NET Core** | 9.0 | Runtime y framework base del servidor |
-| **Entity Framework Core** | 9.0.0 | ORM de acceso a base de datos relacional |
-| **Npgsql.EFCore.PostgreSQL** | 9.0.0 | Driver y proveedor para PostgreSQL |
+| **.NET / ASP.NET Core** | 10.0 | Runtime y framework base del servidor |
+| **Entity Framework Core** | 10.0.15 | ORM de acceso a base de datos relacional |
+| **Npgsql.EFCore.PostgreSQL** | 10.0.4 | Driver y proveedor para PostgreSQL |
 | **MediatR** | 12.4.1 | Desacoplamiento de casos de uso mediante CQRS |
 | **FluentValidation** | 11.9.2 | Validación declarativa de comandos y contratos |
 | **Mapster** | 7.4.0 | Mapeo rápido de alto rendimiento de objetos |
@@ -250,8 +250,8 @@ EnglishLearning/
 ### Frontend
 | Tecnología | Versión | Propósito |
 | :--- | :--- | :--- |
-| **Blazor WebAssembly** | 9.0.0 | Framework SPA interactivo en C# cliente ejecutado en WebAssembly |
-| **Microsoft.AspNetCore.Components.Authorization** | 9.0.0 | Gestión del estado de autenticación y directivas de seguridad en vistas |
+| **Blazor WebAssembly** | 10.0.15 | Framework SPA interactivo en C# cliente ejecutado en WebAssembly |
+| **Microsoft.AspNetCore.Components.Authorization** | 10.0.15 | Gestión del estado de autenticación y directivas de seguridad en vistas |
 | **System.IdentityModel.Tokens.Jwt** | 8.1.2 | Decodificación y lectura de claims JWT en el navegador |
 | **Web Speech API** | Nativa | Síntesis de voz (*SpeechSynthesis*) para pronunciación del tutor |
 
@@ -326,12 +326,15 @@ graph LR
 | `POST` | `/api/v1/auth/verify-otp` | ❌ | Valida el código OTP y entrega los tokens JWT (`accessToken` + `refreshToken`). |
 | `POST` | `/api/v1/auth/resend-otp` | ❌ | Genera y reenvía un nuevo código OTP al correo del usuario. |
 | `POST` | `/api/v1/auth/refresh` | ❌ | Rota y renueva el Access Token expirado usando un Refresh Token válido. |
+| `POST` | `/api/v1/auth/request-password-reset` | ❌ | Solicita un desafío de recuperación por correo. |
+| `POST` | `/api/v1/auth/reset-password` | ❌ | Aplica la contraseña tras verificar el desafío de recuperación. |
 | `POST` | `/api/v1/auth/revoke` | ❌ | Invalida el Refresh Token actual, cerrando la sesión de manera segura. |
 | `GET` | `/api/v1/auth/me` | 🔒 | Obtiene la información básica del usuario en sesión. |
 
 ### 2. Lecciones y Ejercicios — `/api/v1/lessons`
 | Método | Ruta | Auth | Descripción |
 | :--- | :--- | :---: | :--- |
+| `GET` | `/api/v1/lessons` | 🔒 | Catálogo del nivel actual del estudiante. |
 | `GET` | `/api/v1/lessons/by-level/{nivel}` | 🔒 | Obtiene las lecciones disponibles para un nivel CEFR (ej. `A1`, `B1`). |
 | `GET` | `/api/v1/lessons/{id}` | 🔒 | Obtiene el detalle de una lección específica incluyendo sus ejercicios. |
 | `GET` | `/api/v1/lessons/exercises/{id}` | 🔒 | Obtiene los datos de un ejercicio individual por su ID. |
@@ -347,6 +350,7 @@ graph LR
 ### 4. Tutor de Inteligencia Artificial — `/api/v1/chat`
 | Método | Ruta | Auth | Descripción |
 | :--- | :--- | :---: | :--- |
+| `POST` | `/api/v1/chat/production-feedback` | 🔒 | Evalúa una muestra oral o escrita con consentimiento. |
 | `POST` | `/api/v1/chat/ask` | 🔒 | Envía una consulta al tutor IA adaptada al nivel del estudiante y recibe respuesta pedagógica. |
 
 ### 5. Usuarios y Progreso — `/api/v1/users` y `/api/v1/progress`
@@ -364,61 +368,38 @@ graph LR
 
 ---
 
-## Flujo de Autenticación y Seguridad OTP
+## Flujo de autenticación y OTP
 
-El sistema implementa autenticación reforzada en dos fases con verificación de canal externo vía OTP por correo electrónico:
+1. El registro recibe nombre, correo y contraseña. Después de verificar el correo crea la cuenta y emite la sesión.
+2. El inicio de sesión valida las credenciales y devuelve un `challengeId`. La verificación recibe ese identificador y el código de seis dígitos.
+3. El desafío vence en cinco minutos, limita intentos y solo se consume una vez. El reenvío usa el mismo identificador y tiene una espera de un minuto.
+4. La renovación rota el refresh token. El cliente realiza una sola renovación a la vez. Cambiar la contraseña mediante recuperación revoca las sesiones previas.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Estudiante as Estudiante
-    participant UI as Blazor WASM
-    participant API as EnglishLearning.Api
-    participant DB as PostgreSQL
-    participant Brevo as Brevo API (HTTPS)
+Los desafíos temporales viven en memoria del servicio web. Si Render reinicia la instancia durante la verificación, vuelve a iniciar el flujo para recibir un código nuevo. Las cuentas anteriores se conservan y siguen entrando con contraseña y OTP.
 
-    Estudiante->>UI: Ingresa Email y Contraseña
-    UI->>API: POST /api/v1/auth/login
-    API->>DB: Verifica usuario y hash BCrypt
-    API->>API: Genera código OTP aleatorio de 6 dígitos
-    API->>Brevo: POST https://api.brevo.com/v3/smtp/email
-    Brevo-->>Estudiante: Entrega correo con código OTP
-    API-->>UI: Responde { requiresOtp: true }
-    UI->>Estudiante: Muestra formulario de verificación OTP
-    Estudiante->>UI: Digita código de 6 dígitos
-    UI->>API: POST /api/v1/auth/verify-otp
-    API->>API: Valida código en memoria con expiración de 5m
-    API->>DB: Almacena Refresh Token firmado
-    API-->>UI: Devuelve Access Token (JWT) + Refresh Token
-    UI->>UI: Almacena credenciales e inicializa sesión
-```
+## Sistema de niveles CEFR y evaluación
 
----
+El catálogo y las rutas directas solo permiten consultar y practicar lecciones del nivel actual. El diagnóstico asigna las preguntas del banco a un intento y exige las respuestas de las cuatro habilidades antes de guardar un nivel.
 
-## Sistema de Niveles CEFR y Evaluación
+| Nivel | Puntaje global redondeado |
+|---|---:|
+| A1 | 0–25 % |
+| A2 | 26–45 % |
+| B1 | 46–65 % |
+| B2 | 66–85 % |
+| C1 | 86–100 % |
 
-El cálculo de nivel se fundamenta en el **Marco Común Europeo de Referencia para las Lenguas (CEFR)**.
+La promoción usa el último intento de cada ejercicio diferente del nivel actual. Los valores iniciales configurados son diez ejercicios distintos y 80 % de aciertos. El diagnóstico y los ejercicios de otros niveles quedan fuera de la promoción.
 
-### Umbrales del Test Diagnóstico
-| Nivel | Rango de Aciertos | Competencia Lingüística |
-| :---: | :---: | :--- |
-| **A1** | `0% - 25%` | Acceso / Principiante: Comprensión de expresiones cotidianas muy básicas. |
-| **A2** | `26% - 45%` | Plataforma / Elemental: Comunicación en tareas sencillas y habituales. |
-| **B1** | `46% - 65%` | Umbral / Intermedio: Comprensión de puntos principales en contextos conocidos. |
-| **B2** | `66% - 85%` | Avanzado / Intermedio Alto: Fluidez con nativos y comprensión de textos complejos. |
-| **C1** | `86% - 100%` | Dominio Operativo Eficaz: Uso flexible y estructurado del idioma en cualquier ámbito. |
+Una lección queda completada después de acertar cada ejercicio al menos una vez. El porcentaje del nivel divide las lecciones completadas entre las disponibles. El perfil y el reporte calculan los aciertos de práctica sobre todos los intentos de lecciones y muestran el diagnóstico aparte.
 
----
+El catálogo incluye ejercicios de coincidencia exacta, aproximada y Regex. Las actividades de producción oral y escrita usan una rúbrica formativa separada del cálculo CEFR.
 
-## Tutor de Inteligencia Artificial (Google Gemini)
+## Tutor de inteligencia artificial
 
-El servicio `GeminiChatService` actúa como un tutor pedagógico personalizado:
-* **Modelo Primario**: `gemini-3.8-flash` (alta velocidad y razonamiento avanzado).
-* **Modelo Fallback (Respaldo)**: `gemini-3.5-flash-lite` con cuota de **500 peticiones diarias gratuitas**. Si se alcanza el límite del modelo primario (HTTP 429), el pipeline de resiliencia con **Polly** conmuta automáticamente sin interrumpir al usuario.
-* **Auto-Descubrimiento Dinámico**: En caso de un código `404 Not Found` por obsolescencia de versiones en la API de Google, el servicio consulta la lista de modelos de la cuenta y selecciona de forma autónoma el mejor modelo disponible.
-* **Instrucción de Sistema Pedagógica**: Configurado para motivar, corregir con explicaciones claras, sugerir estructuras naturales y mantenerse enfocado en el aprendizaje del idioma.
+El tutor recibe el nivel del perfil y hasta cuatro pares de mensajes anteriores de la conversación actual. Un error del proveedor se comunica como una indisponibilidad temporal con identificador de correlación.
 
----
+La evaluación formativa admite escritura y una grabación de hasta 30 segundos. El estudiante autoriza expresamente la transferencia a Gemini. El backend mantiene la muestra solo durante la solicitud y no guarda grabaciones. La modalidad escrita está disponible cuando el micrófono no se puede usar. [Términos de la API de Gemini](https://ai.google.dev/gemini-api/terms)
 
 ## Servicio de Mensajería Transaccional (Brevo API)
 
@@ -472,7 +453,7 @@ curl -X POST "https://englishlearning-mum4.onrender.com/api/v1/chat/ask" \
 ## Setup Local
 
 ### Prerrequisitos
-* [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9)
+* [.NET 10 LTS SDK](https://dotnet.microsoft.com/download/dotnet/9)
 * [PostgreSQL 16+](https://www.postgresql.org/download/) o Docker Desktop
 * API Key de [Google AI Studio](https://aistudio.google.com/apikey)
 * API Key de [Brevo](https://www.brevo.com/)
@@ -592,26 +573,11 @@ dotnet ef migrations script \
 
 ---
 
-## Tests Unitarios y Cobertura
+## Pruebas automáticas
 
-La suite de pruebas automatizadas está construida con **xUnit** y mide la cobertura del núcleo del dominio y la aplicación:
+Ejecuta la suite con `dotnet test EnglishLearning.sln`. Para incluir las pruebas HTTP de integración, usa un PostgreSQL local y desechable y configura `EnglishLearningTestDatabase` con su conexión. Las pruebas aplican las migraciones y ejecutan registro, OTP, recuperación, renovación, diagnóstico, acceso por nivel, promoción, avance y tutor con dobles de Brevo y Gemini.
 
-```bash
-# Ejecutar todas las pruebas unitarias
-dotnet test
-```
-
-### Métricas de Validación
-* **Pruebas Totales**: 32 pruebas unitarias.
-* **Estado**: ✅ **32 / 32 Superadas (100% Passing)**.
-* **Áreas Cubiertas**:
-  * Autenticación, generación y validación de OTP en memoria (`OtpAuthTests.cs`).
-  * Registro de usuarios, hash BCrypt y asignación inicial (`RegisterHandlerTests.cs`).
-  * Emisión y captura de eventos de dominio (`DomainEventDispatcherTests.cs`).
-  * Evaluación de respuestas con algoritmos exactos, difusos y expresiones regulares.
-  * Lógica matemática de cálculo y promoción de niveles CEFR.
-
----
+El flujo de GitHub Actions crea PostgreSQL 17, revisa dependencias, ejecuta ambas suites y comprueba que la publicación de la API contiene los recursos de Blazor. Los resultados TRX quedan como artefacto de la ejecución.
 
 ## Despliegue en Render
 
@@ -663,6 +629,13 @@ services:
 En el plan **Free** de Render, los contenedores entran en reposo tras 15 minutos sin recibir tráfico para ahorrar recursos. El primer acceso desencadena un arranque en frío (*cold start*) que tarda entre 30 y 50 segundos. Una vez activo, responderá al instante.
 
 ---
+
+## Verificación y reversión de una publicación
+
+- Confirma en Render que el commit esperado quedó en estado `live`. Comprueba la página de inicio, los recursos Blazor, `/health` y que una ruta autenticada sin sesión devuelve 401.
+- Configura `ConnectionStrings__DefaultConnection`, `Jwt__SecretKey`, `Gemini__ApiKey`, `Brevo__ApiKey` y `Brevo__FromEmail` en Render. El remitente debe estar validado por Brevo.
+- La aplicación se conecta directamente a PostgreSQL. Para Supabase, reserva las tablas para el backend y restringe los roles de la Data API. Los cambios en la base se verifican por separado del despliegue.
+- Si hay una regresión, selecciona el último despliegue saludable y revisa la compatibilidad de la base antes de revertir. Las columnas nuevas de esta versión permiten que el binario anterior siga ejecutándose. Render no revierte la base automáticamente.
 
 ## 👨‍💻 Autor
 

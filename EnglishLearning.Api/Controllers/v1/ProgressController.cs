@@ -20,6 +20,9 @@ public sealed class ProgressController : BaseApiController
         if (CurrentUserId is null)
             return Unauthorized();
 
+        if (usuarioId.HasValue && usuarioId.Value != CurrentUserId.Value)
+            return Forbid();
+
         var query = new GetProgressReportQuery(CurrentUserId.Value);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
