@@ -58,15 +58,26 @@ public sealed class SeedDataService : ISeedDataService
             await AlignQuestionSequenceAsync(cancellationToken);
         }
 
-        // Seed lessons + exercises
-        if (!await _context.Lecciones.AnyAsync(cancellationToken))
-        {
-            _context.Lecciones.AddRange(LessonSeedData.Build());
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        await AddMissingLessonsAsync(cancellationToken);
 
         await AddPracticeExercisesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task AddMissingLessonsAsync(CancellationToken ct)
+    {
+        var existing = await _context.Lecciones.AsNoTracking()
+            .Select(lesson => new { lesson.NivelRequerido, lesson.Titulo })
+            .ToListAsync(ct);
+        var existingKeys = existing.Select(lesson => (lesson.NivelRequerido, lesson.Titulo)).ToHashSet();
+
+        foreach (var lesson in LessonSeedData.Build().Concat(ExpandedLessonSeedData.Build()))
+        {
+            if (existingKeys.Add((lesson.NivelRequerido, lesson.Titulo)))
+                _context.Lecciones.Add(lesson);
+        }
+
+        await _context.SaveChangesAsync(ct);
     }
 
     private async Task AddPracticeExercisesAsync(CancellationToken ct)

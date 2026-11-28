@@ -29,6 +29,25 @@ public sealed class PracticeMetricsTests
     }
 
     [Fact]
+    public void PromotionRequiresPractisingEveryExerciseInTheCatalog()
+    {
+        var lessons = Enumerable.Range(1, 10).Select(id => BuildLesson(id, 4)).ToArray();
+        var now = DateTime.UtcNow;
+        var history = Enumerable.Range(1, 40).Select(id => Answer(id, id <= 32, now)).ToArray();
+
+        var partial = PracticeMetrics.ForLevel(lessons, history.Take(10));
+        Assert.Equal(100, PracticeMetrics.Percent(partial.LatestCorrect, partial.DistinctExercises));
+        Assert.False(partial.CanPromote(NivelIngles.A1, new()));
+
+        var almostComplete = PracticeMetrics.ForLevel(lessons, history.Take(39));
+        Assert.False(almostComplete.CanPromote(NivelIngles.A1, new()));
+
+        var completed = PracticeMetrics.ForLevel(lessons, history);
+        Assert.True(completed.CanPromote(NivelIngles.A1, new()));
+        Assert.Equal(40, completed.ExerciseCount);
+    }
+
+    [Fact]
     public void CompletionCountsEachLessonOnceAndKeepsEarlierSuccessfulAnswers()
     {
         var lessons = new[] { BuildLesson(1, 2), BuildLesson(2, 2) };

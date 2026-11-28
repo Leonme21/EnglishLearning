@@ -106,7 +106,8 @@ public sealed class UserJourneyTests
         using var otherLevel = await browser.GetAsync("/api/v1/lessons/by-level/A2");
         Assert.Equal(HttpStatusCode.Forbidden, otherLevel.StatusCode);
         var catalog = await GetAsync(browser, "/api/v1/lessons");
-        Assert.Equal(10, catalog.EnumerateArray().Sum(lesson => lesson.GetProperty("ejercicios").GetArrayLength()));
+        Assert.Equal(10, catalog.GetArrayLength());
+        Assert.Equal(42, catalog.EnumerateArray().Sum(lesson => lesson.GetProperty("ejercicios").GetArrayLength()));
 
         var lessons = await db.Lecciones.AsNoTracking().Include(l => l.Ejercicios)
             .Where(l => l.NivelRequerido == EnglishLearning.Domain.Enums.NivelIngles.A1).ToListAsync();
@@ -122,16 +123,53 @@ public sealed class UserJourneyTests
             var text = exercise.EstrategiaEvaluacion == "Regex" ? regexAnswers[exercise.Contenido] : exercise.RespuestaCorrecta;
             result = await PostAsync(browser, "/api/v1/lessons/evaluate", new { ejercicioId = exercise.Id, respuestaTexto = text });
             Assert.True(result.GetProperty("esCorrecta").GetBoolean());
+            if (exercise.Id != submittedAnswers[^1].Id)
+                Assert.Equal(JsonValueKind.Null, result.GetProperty("nuevoNivel").ValueKind);
         }
 
         Assert.Equal("A2", result.GetProperty("nuevoNivel").GetString());
         var progress = await GetAsync(browser, "/api/v1/progress");
         var profile = await GetAsync(browser, "/api/v1/auth/me");
-        Assert.Equal(10, progress.GetProperty("practice").GetProperty("total").GetInt32());
+        Assert.Equal(42, progress.GetProperty("practice").GetProperty("total").GetInt32());
         Assert.Equal(progress.GetProperty("practice").GetRawText(), profile.GetProperty("practice").GetRawText());
         var a1 = Assert.Single(progress.GetProperty("progresos").EnumerateArray(), level => level.GetProperty("nivel").GetString() == "A1");
         Assert.Equal(100, a1.GetProperty("porcentajeCompletado").GetDouble());
-        Assert.Equal(2, a1.GetProperty("leccionesCompletadas").GetInt32());
+        Assert.Equal(10, a1.GetProperty("leccionesCompletadas").GetInt32());
+    }
+
+    [PostgreSqlFact]
+    public async Task CatalogHasTenLessonsPerLevelAndSeedingPreservesIds()
+    {
+        await using var app = new TestApplication();
+        using var browser = app.CreateClient();
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<EnglishLearningDbContext>();
+        var before = await db.Lecciones.AsNoTracking().Include(l => l.Ejercicios)
+            .OrderBy(l => l.Id).ToListAsync();
+
+        var levels = before.GroupBy(l => l.NivelRequerido).ToArray();
+        Assert.Equal(5, levels.Length);
+        foreach (var level in levels)
+        {
+            Assert.Equal(10, level.Count());
+            Assert.Equal(42, level.Sum(l => l.Ejercicios.Count));
+            Assert.Equal(10, level.Select(l => l.Titulo).Distinct().Count());
+            foreach (var exercise in level.SelectMany(l => l.Ejercicios)
+                         .Where(e => e.Contenido.Contains('[')))
+            {
+                var opening = exercise.Contenido.IndexOf('[');
+                var closing = exercise.Contenido.IndexOf(']', opening);
+                Assert.Contains(exercise.RespuestaCorrecta, exercise.Contenido[(opening + 1)..closing].Split('|'));
+            }
+        }
+
+        await scope.ServiceProvider.GetRequiredService<EnglishLearning.Infrastructure.Services.ISeedDataService>().SeedAsync();
+        var after = await db.Lecciones.AsNoTracking().Include(l => l.Ejercicios)
+            .OrderBy(l => l.Id).ToListAsync();
+
+        Assert.Equal(before.Select(l => l.Id), after.Select(l => l.Id));
+        Assert.Equal(before.SelectMany(l => l.Ejercicios).Select(e => e.Id).Order(),
+            after.SelectMany(l => l.Ejercicios).Select(e => e.Id).Order());
     }
 
     [PostgreSqlFact]
