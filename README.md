@@ -389,7 +389,7 @@ El catálogo y las rutas directas solo permiten consultar y practicar lecciones 
 | B2 | 66–85 % |
 | C1 | 86–100 % |
 
-La promoción usa el último intento de cada ejercicio diferente del nivel actual. Los valores iniciales configurados son diez ejercicios distintos y 80 % de aciertos. El diagnóstico y los ejercicios de otros niveles quedan fuera de la promoción.
+Cada nivel contiene diez lecciones. La promoción requiere responder todos los ejercicios distintos del nivel actual y obtener al menos el 80 % de aciertos, tomando el último intento de cada ejercicio. El diagnóstico y los ejercicios de otros niveles quedan fuera de la promoción.
 
 Una lección queda completada después de acertar cada ejercicio al menos una vez. El porcentaje del nivel divide las lecciones completadas entre las disponibles. El perfil y el reporte calculan los aciertos de práctica sobre todos los intentos de lecciones y muestran el diagnóstico aparte.
 

@@ -4,14 +4,15 @@ using EnglishLearning.Domain.Options;
 
 namespace EnglishLearning.Domain.Services;
 
-public sealed record PracticeMetrics(int DistinctExercises, int LatestCorrect, IReadOnlySet<int> CompletedLessons, int LessonCount)
+public sealed record PracticeMetrics(int DistinctExercises, int LatestCorrect, IReadOnlySet<int> CompletedLessons, int LessonCount, int ExerciseCount)
 {
     public double CompletionPercentage => Percent(CompletedLessons.Count, LessonCount);
 
     public bool CanPromote(NivelIngles level, PromotionRulesOptions rules) =>
         level >= NivelIngles.A1 &&
         Enum.TryParse<NivelIngles>(rules.MaxLevel, out var maxLevel) && Enum.IsDefined(maxLevel) &&
-        level < maxLevel && DistinctExercises >= rules.MinTotalResponses &&
+        level < maxLevel && ExerciseCount > 0 &&
+        DistinctExercises == ExerciseCount && DistinctExercises >= rules.MinTotalResponses &&
         Percent(LatestCorrect, DistinctExercises) >= rules.MinCorrectPercentage;
 
     public static PracticeMetrics ForLevel(IReadOnlyList<Leccion> lessons, IEnumerable<RespuestaUsuario> history)
@@ -23,7 +24,7 @@ public sealed record PracticeMetrics(int DistinctExercises, int LatestCorrect, I
         var solved = groups.Where(g => g.Any(r => r.EsCorrecta)).Select(g => g.Key).ToHashSet();
         var completed = lessons.Where(l => l.Ejercicios.Count > 0 && l.Ejercicios.All(e => solved.Contains(e.Id)))
             .Select(l => l.Id).ToHashSet();
-        return new PracticeMetrics(groups.Length, latestCorrect, completed, lessons.Count);
+        return new PracticeMetrics(groups.Length, latestCorrect, completed, lessons.Count, ids.Count);
     }
 
     public static double Percent(int correct, int total) => total == 0 ? 0 : 100.0 * correct / total;

@@ -4,7 +4,7 @@
 @inject EnglishLearning.Client.Services.Auth.AuthService AuthService
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthState
 
-<div class="app-shell">
+<div class="app-shell @(IsTutorPage ? "tutor-shell" : "")">
     <!-- Sidebar para Desktop/Tablet -->
     <aside class="sidebar glass-panel">
         <div class="sidebar-header">
@@ -155,6 +155,7 @@
 .main-content {
     flex: 1;
     margin-left: 260px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -166,6 +167,32 @@
     margin: 0 auto;
     width: 100%;
     flex: 1;
+}
+
+/* The tutor uses the remaining application viewport, including the mobile navigation. */
+body:has(.tutor-shell) {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tutor-shell {
+    height: 100vh;
+    height: 100dvh;
+    height: var(--tutor-viewport-height, 100dvh);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tutor-shell .main-content {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tutor-shell .page-container {
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    padding: clamp(0.75rem, 2vw, 2rem);
 }
 
 .topbar, .bottom-nav { display: none; }
@@ -206,6 +233,35 @@
         border-top: 1px solid var(--surface-border);
         z-index: 100;
     }
+    .tutor-shell {
+        flex-direction: column;
+    }
+
+    .tutor-shell .main-content {
+        padding-bottom: 0;
+    }
+
+    .tutor-shell .topbar {
+        position: static;
+        flex: 0 0 auto;
+        padding: 0.65rem 1rem;
+    }
+
+    .tutor-shell .page-container {
+        padding: 0.5rem;
+    }
+
+    .tutor-shell .bottom-nav {
+        position: static;
+        flex: 0 0 auto;
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    @@media (max-height: 420px) {
+        .tutor-shell .topbar { display: none; }
+        .tutor-shell .bottom-nav { padding-top: 0; }
+    }
+
     .bottom-nav .nav-item {
         padding: 0.5rem;
         flex-direction: column;
@@ -221,6 +277,10 @@
 </style>
 
 @code {
+    private bool IsTutorPage => string.Equals(
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/'),
+        "chat", StringComparison.OrdinalIgnoreCase);
+
     protected override void OnInitialized()
     {
         Session.OnChange += StateHasChanged;

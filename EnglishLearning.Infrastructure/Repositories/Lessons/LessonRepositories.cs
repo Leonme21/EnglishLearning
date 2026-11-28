@@ -17,6 +17,7 @@ public sealed class LeccionQueryRepository : QueryRepository<Leccion>, ILeccionQ
             .AsNoTracking()
             .Include(l => l.Ejercicios)
             .Where(l => l.NivelRequerido == nivel)
+            .OrderBy(l => l.Id)
             .ToListAsync(cancellationToken);
     }
 

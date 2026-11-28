@@ -1,5 +1,6 @@
 @page "/chat"
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject ChatService ChatService
 @inject ToastService ToastService
 @inject UserSession Session
@@ -7,7 +8,7 @@
 
 <PageTitle>Tutor IA - English Learning</PageTitle>
 
-<div class="chat-container">
+<div class="chat-container" @ref="_chatRoot">
     <!-- Chat Header -->
     <div class="chat-header glass-panel">
         <div class="header-info">
@@ -23,7 +24,7 @@
             </div>
         </div>
         <div class="header-actions">
-            <button class="btn-clear" @onclick="ClearChat" title="Reiniciar conversación">
+            <button class="btn-clear" @onclick="ClearChat" title="Reiniciar conversación" aria-label="Reiniciar conversación">
                 <span class="clear-icon">🔄</span>
                 <span class="clear-text">Nueva</span>
             </button>
@@ -46,7 +47,7 @@
     }
 
     <!-- Messages Window -->
-    <div class="messages-window glass-panel" id="messages-container">
+    <div class="messages-window glass-panel" id="messages-container" role="log" aria-label="Conversación con el tutor">
         @foreach (var msg in _messages)
         {
             <div class="message-row @(msg.IsUser ? "user-row" : "bot-row")">
@@ -91,7 +92,7 @@
     <div class="chat-input-area glass-panel">
         <form @onsubmit="SendMessageAsync" class="input-form">
             <input type="text"
-                   class="chat-input"
+                   class="chat-input" aria-label="Mensaje al tutor"
                    placeholder="Escribe tu mensaje en inglés o español..."
                    @bind="_currentMessage"
                    @bind:event="oninput"
@@ -100,7 +101,7 @@
             <button type="submit" 
                     class="btn-send" 
                     disabled="@(string.IsNullOrWhiteSpace(_currentMessage) || _isSending)"
-                    title="Enviar mensaje">
+                    title="Enviar mensaje" aria-label="Enviar mensaje">
                 @if (_isSending)
                 {
                     <span class="spinner-small"></span>
@@ -119,8 +120,8 @@
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 4.5rem);
-    max-height: calc(100vh - 4.5rem);
+    flex: 1;
+    min-width: 0;
     max-width: 900px;
     margin: 0 auto;
     gap: 0.75rem;
@@ -132,6 +133,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
     padding: 0.85rem 1.25rem;
     border-radius: 16px;
     background: var(--surface-color);
@@ -145,7 +148,10 @@
     align-items: center;
     gap: 0.85rem;
     min-width: 0;
+    flex: 1;
 }
+
+.header-actions { flex-shrink: 0; }
 
 .avatar-bot {
     position: relative;
@@ -228,6 +234,7 @@
 
 .suggestions-container {
     flex-shrink: 0;
+    min-width: 0;
     padding: 0 0.25rem;
 }
 
@@ -236,12 +243,9 @@
     gap: 0.5rem;
     overflow-x: auto;
     padding-bottom: 0.25rem;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-}
-
-.suggestions-chips::-webkit-scrollbar {
-    display: none;
 }
 
 .chip {
@@ -268,6 +272,9 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    min-width: 0;
+    overscroll-behavior-y: contain;
     padding: 1.25rem;
     border-radius: 16px;
     background: var(--surface-color);
@@ -284,6 +291,8 @@
     align-items: flex-end;
     gap: 0.65rem;
     max-width: 85%;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .user-row {
@@ -315,10 +324,12 @@
     padding: 0.85rem 1.15rem;
     border-radius: 18px;
     position: relative;
-    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     line-height: 1.5;
     max-width: 100%;
+    flex: 0 1 auto;
 }
 
 .user-bubble {
@@ -344,6 +355,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.4rem;
     padding-top: 0.25rem;
@@ -356,6 +368,7 @@
     padding: 0.15rem 0.5rem;
     border-radius: 12px;
     font-size: 0.72rem;
+    min-height: 32px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-fast);
@@ -388,10 +401,12 @@
     display: flex;
     gap: 0.65rem;
     align-items: center;
+    min-width: 0;
 }
 
 .chat-input {
-    flex: 1;
+    flex: 1 1 0;
+    width: 0;
     min-width: 0;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--surface-border);
@@ -463,9 +478,6 @@
 /* Media Queries para Tablet y Móvil */
 @@media (max-width: 768px) {
     .chat-container {
-        height: calc(100vh - 135px);
-        height: calc(100dvh - 135px);
-        max-height: calc(100dvh - 135px);
         gap: 0.5rem;
         padding: 0;
     }
@@ -532,15 +544,19 @@
 
     .chat-input {
         padding: 0.65rem 0.8rem;
-        font-size: 0.88rem;
+        font-size: 1rem;
         border-radius: 10px;
+        min-height: 44px;
     }
 
     .btn-send {
         padding: 0.65rem 0.9rem;
         font-size: 0.85rem;
         border-radius: 10px;
+        min-height: 44px;
     }
+    .btn-clear { min-width: 44px; min-height: 44px; justify-content: center; }
+    .chip { min-height: 36px; }
 }
 
 @@media (max-width: 480px) {
@@ -567,10 +583,24 @@
     .message-row {
         max-width: 96%;
     }
+
+    .header-info { gap: 0.5rem; }
+    .chat-header { gap: 0.35rem; }
+    .message-bubble { padding: 0.55rem 0.7rem; }
+}
+
+@@media (max-height: 420px) {
+    .chat-container { gap: 0.35rem; }
+    .chat-header { padding: 0.35rem 0.6rem; }
+    .avatar-bot { width: 30px; height: 30px; font-size: 1rem; }
+    .chat-input-area { padding: 0.3rem; }
 }
 </style>
 
 @code {
+    private ElementReference _chatRoot;
+    private readonly string _viewportId = Guid.NewGuid().ToString("N");
+    private IJSObjectReference? _viewport;
     private List<ChatMessage> _messages = new();
     private readonly List<TutorTurn> _context = [];
     private int _conversationVersion;
@@ -589,6 +619,38 @@
     protected override void OnInitialized()
     {
         InitializeGreeting();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        try
+        {
+            _viewport = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/chatViewport.js");
+            await _viewport.InvokeVoidAsync("attach", _viewportId, _chatRoot);
+        }
+        catch (JSException)
+        {
+            // The CSS dynamic viewport remains available if JS interop is unavailable.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_viewport is null)
+            return;
+
+        try
+        {
+            await _viewport.InvokeVoidAsync("detach", _viewportId);
+            await _viewport.DisposeAsync();
+        }
+        catch (JSException)
+        {
+            // The document may already have been discarded.
+        }
     }
 
     private void InitializeGreeting()

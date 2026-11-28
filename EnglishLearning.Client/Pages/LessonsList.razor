@@ -24,6 +24,7 @@
         }
         else
         {
+            <p class="text-muted mb-3">@_lessons.Count lecciones de tu nivel · @_lessons.Sum(l => l.Ejercicios.Count) ejercicios</p>
             <div class="lessons-grid">
                 @foreach (var lesson in _lessons)
                 {
@@ -48,7 +49,7 @@
 <style>
 .lessons-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 1.5rem;
 }
 .lesson-card {
